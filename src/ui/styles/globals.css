@@ -388,4 +388,144 @@
     font-size: 0.75rem;
     line-height: 1.5;
   }
+
+  /* ── Premium Markdown Tables (Notion/Linear style) ── */
+  .prose table {
+    @apply w-full border-collapse text-sm my-3;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgb(var(--border));
+    display: block;
+    overflow-x: auto;
+  }
+
+  .prose thead {
+    @apply bg-surface-3;
+  }
+
+  .prose thead th {
+    @apply text-text-tertiary font-semibold text-left tracking-wider;
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    padding: 8px 12px;
+    border-bottom: 1px solid rgb(var(--border));
+    white-space: nowrap;
+  }
+
+  .prose tbody tr {
+    @apply transition-colors duration-100;
+    border-bottom: 1px solid rgb(var(--border) / 0.5);
+  }
+
+  .prose tbody tr:nth-child(odd) {
+    @apply bg-surface-1;
+  }
+
+  .prose tbody tr:nth-child(even) {
+    @apply bg-surface-2;
+  }
+
+  .prose tbody tr:hover {
+    @apply bg-accent/5;
+  }
+
+  .prose tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .prose tbody td {
+    @apply text-text-secondary;
+    padding: 7px 12px;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Right-align numeric cells (stars, issue numbers that are pure digits) */
+  .prose tbody td:first-child {
+    @apply text-text-primary font-medium;
+  }
+
+  /* ── List Styling ── */
+  .prose ul {
+    @apply my-2 pl-0;
+    list-style: none;
+  }
+
+  .prose ul li {
+    @apply relative pl-5 my-1 text-text-secondary;
+  }
+
+  .prose ul li::before {
+    content: '';
+    @apply absolute left-0 top-[0.5em] w-1.5 h-1.5 rounded-full bg-accent/50;
+  }
+
+  .prose ul ul li::before {
+    @apply bg-surface-4 rounded-sm;
+    width: 5px;
+    height: 5px;
+  }
+
+  .prose ol {
+    @apply my-2 pl-0;
+    list-style: none;
+    counter-reset: ol-counter;
+  }
+
+  .prose ol li {
+    @apply relative pl-6 my-1 text-text-secondary;
+    counter-increment: ol-counter;
+  }
+
+  .prose ol li::before {
+    content: counter(ol-counter);
+    @apply absolute left-0 text-accent font-semibold;
+    font-size: 0.75rem;
+    top: 0.1em;
+    min-width: 1.2em;
+    text-align: center;
+  }
+
+  /* ── Tool Result Expandable Card ── */
+  .tool-result-container {
+    @apply mt-2 rounded-lg border border-border overflow-hidden;
+  }
+
+  .tool-result-preview {
+    @apply text-xs text-text-secondary bg-surface-1 px-3 py-2 cursor-pointer select-none
+           transition-colors duration-100 hover:bg-surface-2;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .tool-result-preview.expanded {
+    display: block;
+    -webkit-line-clamp: unset;
+  }
+
+  .tool-result-full {
+    @apply text-xs text-text-secondary bg-surface-1 px-3 py-2 max-h-64 overflow-y-auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .tool-result-toggle {
+    @apply text-2xs text-text-tertiary px-3 py-1 bg-surface-2 cursor-pointer select-none
+           hover:text-accent transition-colors duration-100;
+    text-align: center;
+    border-top: 1px solid rgb(var(--border) / 0.5);
+  }
+
+  /* ── Links in prose ── */
+  .prose a {
+    @apply text-accent no-underline transition-colors duration-100;
+  }
+  .prose a:hover {
+    @apply underline;
+  }
 }

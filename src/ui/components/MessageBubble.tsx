@@ -28,6 +28,15 @@ renderer.code = function ({ text, lang }: { text: string; lang?: string }) {
 </div>`;
 };
 
+/* ── External links open in new tab ── */
+renderer.link = function ({ href, text }: { href: string; text: string }) {
+  const escaped = (text || href || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  return `<a href="${href}" target="_blank" rel="noopener noreferrer">${escaped}</a>`;
+};
+
 marked.setOptions({ breaks: true, gfm: true, renderer });
 
 /* ── Component ── */
