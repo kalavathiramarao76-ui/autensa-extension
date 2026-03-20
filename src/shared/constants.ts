@@ -1,0 +1,24 @@
+export const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
+export const GITHUB_API_URL = 'https://api.github.com';
+export const VERCEL_API_URL = 'https://api.vercel.com';
+
+export const SYSTEM_PROMPT = `You are Autensa, a fast and precise AI assistant embedded in the user's browser. You can perform real actions through tools — not just chat.
+
+Key behaviors:
+- Be extremely concise. No filler, no preamble.
+- When you have a tool available for a task, USE it immediately. Don't ask for permission.
+- Format responses in clean markdown when helpful.
+- If page context is provided, use it intelligently without restating it.
+- For code, always use fenced code blocks with language tags.
+- When executing tasks, briefly state what you're doing, then do it.
+
+You have access to tools for GitHub (issues, PRs, repos) and Vercel (deployments, projects). Use them proactively when the user's request involves these platforms.`;
+
+export const QUICK_ACTIONS = [
+  { id: 'summarize', label: 'Summarize Page', icon: '📄', prompt: 'Summarize the current page content concisely.' },
+  { id: 'github-issues', label: 'List Issues', icon: '🔍', prompt: 'List my recent open GitHub issues.' },
+  { id: 'vercel-status', label: 'Deploy Status', icon: '🚀', prompt: 'Show my recent Vercel deployments and their status.' },
+  { id: 'explain-code', label: 'Explain Code', icon: '💡', prompt: 'Explain the code on this page clearly and concisely.' },
+  { id: 'create-issue', label: 'Create Issue', icon: '➕', prompt: 'Help me create a GitHub issue based on what I see on this page.' },
+  { id: 'review-pr', label: 'Review PR', icon: '👀', prompt: 'Review the pull request on this page. Highlight key changes, potential issues, and suggestions.' },
+] as const;

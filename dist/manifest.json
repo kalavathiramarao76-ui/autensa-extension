@@ -1,0 +1,61 @@
+{
+  "manifest_version": 3,
+  "name": "Autensa",
+  "description": "Agentic AI assistant — tasks, not just chat",
+  "version": "1.0.0",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png"
+    }
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "commands": {
+    "open-command-palette": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+K",
+        "mac": "Command+Shift+K"
+      },
+      "description": "Open Autensa command palette"
+    },
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+A",
+        "mac": "Command+Shift+A"
+      },
+      "description": "Open Autensa"
+    }
+  },
+  "permissions": [
+    "activeTab",
+    "sidePanel",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://api.anthropic.com/*",
+    "https://api.github.com/*",
+    "https://api.vercel.com/*",
+    "http://sai.sharedllm.com/*",
+    "https://sai.sharedllm.com/*"
+  ]
+}
