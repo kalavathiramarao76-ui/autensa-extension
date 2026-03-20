@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { ChatView } from '../ui/views/ChatView';
 import { SettingsView } from '../ui/views/SettingsView';
 import { useSettings } from '../ui/hooks/useSettings';
+import { ErrorBoundary } from '../ui/components/ErrorBoundary';
 
-export function App() {
+function AppInner() {
   const [view, setView] = useState<'chat' | 'settings'>('chat');
   const { isConfigured, loading } = useSettings();
 
@@ -42,5 +43,13 @@ export function App() {
         <SettingsView onBack={() => setView('chat')} />
       )}
     </div>
+  );
+}
+
+export function App() {
+  return (
+    <ErrorBoundary>
+      <AppInner />
+    </ErrorBoundary>
   );
 }

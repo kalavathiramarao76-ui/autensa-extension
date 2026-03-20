@@ -4,6 +4,7 @@ import { MessageBubble } from '../components/MessageBubble';
 import { StreamingText } from '../components/StreamingText';
 import { ToolExecution } from '../components/ToolExecution';
 import { Input } from '../components/Input';
+import { ConnectionStatus } from '../components/ConnectionStatus';
 import { QUICK_ACTIONS } from '@/shared/constants';
 
 export function ChatView() {
@@ -52,6 +53,8 @@ export function ChatView() {
           )}
         </div>
       </div>
+
+      <ConnectionStatus />
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
