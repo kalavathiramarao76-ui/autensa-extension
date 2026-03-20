@@ -47,6 +47,9 @@ function AppInner() {
       if (view !== 'chat') setView('chat');
       chatRef.current?.clearAndFocus();
     },
+    onExport: () => {
+      chatRef.current?.exportChat();
+    },
     onEscape: () => {
       if (view !== 'chat') {
         setView('chat');

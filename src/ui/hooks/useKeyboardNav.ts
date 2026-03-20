@@ -7,6 +7,7 @@ interface KeyboardNavCallbacks {
   onOpenHistory?: () => void;
   onOpenSettings?: () => void;
   onFocusInput?: () => void;
+  onExport?: () => void;
   onEscape?: () => void;
 }
 
@@ -55,6 +56,10 @@ export function useKeyboardNav(
           case ',':
             e.preventDefault();
             callbacks.onOpenSettings?.();
+            return;
+          case 'e':
+            e.preventDefault();
+            callbacks.onExport?.();
             return;
           case 'l':
             e.preventDefault();

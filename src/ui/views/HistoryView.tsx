@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Session } from '@/shared/types';
 import { getSessions, deleteSession } from '@/shared/storage';
+import { exportSessionToMarkdown, downloadMarkdown, exportFilename } from '@/shared/export';
+import { useToast } from '../components/Toast';
 import { Skeleton } from '../components/Skeleton';
 
 interface Props {
@@ -45,6 +47,7 @@ export function HistoryView({ onBack, onSelectSession, activeSessionId }: Props)
   const [selectedIndex, setSelectedIndex] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const { toast } = useToast();
 
   const loadSessions = useCallback(async () => {
     const data = await getSessions();
@@ -120,6 +123,13 @@ export function HistoryView({ onBack, onSelectSession, activeSessionId }: Props)
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [loading, sessions, selectedIndex, deletingId, onBack, onSelectSession]);
+
+  const handleExportSession = (e: React.MouseEvent, session: Session) => {
+    e.stopPropagation();
+    const md = exportSessionToMarkdown(session);
+    downloadMarkdown(md, exportFilename());
+    toast({ type: 'success', title: 'Conversation exported' });
+  };
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -238,6 +248,23 @@ export function HistoryView({ onBack, onSelectSession, activeSessionId }: Props)
                   </div>
                 </div>
 
+                <div className="flex items-center gap-0.5">
+                  <button
+                    onClick={(e) => handleExportSession(e, session)}
+                    className={`
+                      mt-0.5 p-1.5 rounded-lg transition-all duration-150
+                      outline-none focus-visible:ring-2 focus-visible:ring-accent/40
+                      ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
+                      hover:bg-surface-4 text-text-tertiary hover:text-text-secondary
+                    `}
+                    title="Export conversation"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                      <polyline points="7 10 12 15 17 10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                  </button>
                 <button
                   onClick={(e) => handleDelete(e, session.id)}
                   className={`
@@ -262,6 +289,7 @@ export function HistoryView({ onBack, onSelectSession, activeSessionId }: Props)
                     </svg>
                   )}
                 </button>
+                </div>
               </div>
             </button>
           );

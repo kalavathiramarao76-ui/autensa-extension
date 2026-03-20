@@ -10,6 +10,7 @@ import { useToast } from '../components/Toast';
 import { QUICK_ACTIONS } from '@/shared/constants';
 import { Session, ToolCallDisplay } from '@/shared/types';
 import { estimateTokens, formatTokenCount } from '@/shared/tokenizer';
+import { exportSessionToMarkdown, downloadMarkdown, copyToClipboard, exportFilename } from '@/shared/export';
 import { gridNav, MOD_KEY } from '../hooks/useKeyboardNav';
 
 interface ChatViewProps {
@@ -23,6 +24,7 @@ export interface ChatViewHandle {
   focusInput: () => void;
   clearAndFocus: () => void;
   newChat: () => void;
+  exportChat: () => void;
 }
 
 export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatView(
@@ -60,6 +62,7 @@ export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatV
       setInput('');
       setTimeout(() => inputRef.current?.focus(), 0);
     },
+    exportChat: () => handleExport(false),
   }));
 
   // Handle session restore from history
@@ -112,6 +115,26 @@ export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatV
     newSession();
     toast({ type: 'info', title: 'Chat cleared' });
   };
+
+  const handleExport = useCallback((copyMode = false) => {
+    if (messages.length === 0) return;
+    const session: Session = {
+      id: sessionId,
+      messages,
+      createdAt: messages[0]?.timestamp ?? Date.now(),
+      updatedAt: messages[messages.length - 1]?.timestamp ?? Date.now(),
+      title: messages.find(m => m.role === 'user')?.content.slice(0, 80),
+    };
+    const md = exportSessionToMarkdown(session, settings.model);
+    if (copyMode) {
+      copyToClipboard(md).then(ok => {
+        toast({ type: ok ? 'success' : 'error', title: ok ? 'Copied as Markdown' : 'Copy failed' });
+      });
+    } else {
+      downloadMarkdown(md, exportFilename());
+      toast({ type: 'success', title: 'Conversation exported' });
+    }
+  }, [messages, sessionId, settings.model, toast]);
 
   const isEmpty = messages.length === 0 && !isStreaming;
 
@@ -171,6 +194,22 @@ export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatV
               </svg>
               <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-2xs text-text-tertiary opacity-0 group-hover/hint:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
                 {MOD_KEY}H
+              </span>
+            </button>
+          )}
+          {messages.length > 0 && (
+            <button
+              onClick={(e) => handleExport(e.shiftKey)}
+              className="btn-ghost !px-2 !py-1 text-xs group/hint relative"
+              title="Export conversation (Shift+click to copy)"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-2xs text-text-tertiary opacity-0 group-hover/hint:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                {MOD_KEY}E
               </span>
             </button>
           )}
