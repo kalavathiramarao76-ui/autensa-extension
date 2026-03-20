@@ -40,6 +40,8 @@ export async function runAgent(
   const toolDefs = registry.getToolDefinitions();
   let fullText = '';
 
+  let lastToolOutputs = '';
+
   for (let iteration = 0; iteration < maxIterations; iteration++) {
     let iterText = '';
     const toolCalls: Array<{ id: string; name: string; input: unknown }> = [];
@@ -51,6 +53,8 @@ export async function runAgent(
 
         streamClaude(messages, toolDefs, {
           onText(text) {
+            // Filter out literal "undefined" tokens from model output
+            if (text === 'undefined' || text === 'null') return;
             iterText += text;
             fullText += text;
             callbacks.onText(text);
@@ -94,8 +98,9 @@ export async function runAgent(
     }
     messages.push({ role: 'assistant', content: assistantContent });
 
-    // Execute each tool
+    // Execute each tool and collect formatted results
     const toolResults: ClaudeContent[] = [];
+    const formattedToolOutputs: string[] = [];
     for (const tc of toolCalls) {
       callbacks.onToolStart(tc.id, tc.name, tc.input);
       try {
@@ -107,6 +112,7 @@ export async function runAgent(
           content: result.data,
           is_error: !result.success,
         });
+        if (result.success) formattedToolOutputs.push(result.data);
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : 'Tool execution failed';
         callbacks.onToolResult(tc.id, tc.name, errMsg, false);
@@ -120,9 +126,20 @@ export async function runAgent(
     }
     messages.push({ role: 'user', content: toolResults });
 
+    // Save formatted outputs as fallback
+    lastToolOutputs = formattedToolOutputs.join('\n\n');
+
     // Reset for next iteration
     fullText += '\n';
   }
 
-  callbacks.onComplete(fullText);
+  // If final output is empty/garbage but we have tool outputs, use those
+  const trimmed = fullText.replace(/undefined/gi, '').replace(/null/gi, '').trim();
+  if (!trimmed && lastToolOutputs) {
+    // Stream the tool outputs directly to the user
+    callbacks.onText(lastToolOutputs);
+    callbacks.onComplete(lastToolOutputs);
+  } else {
+    callbacks.onComplete(fullText);
+  }
 }
