@@ -1,0 +1,1 @@
+function r(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}const e=4;function i(t){return t?Math.max(1,Math.ceil(t.length/e)):0}function n(t){return t<1e3?String(t):t<1e4||t<1e6?(t/1e3).toFixed(1)+"k":(t/1e6).toFixed(1)+"M"}export{i as e,n as f,r as u};
