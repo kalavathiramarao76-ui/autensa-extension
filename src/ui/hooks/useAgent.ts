@@ -1,14 +1,18 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Message, ToolCallDisplay, PageContext, MessageType } from '@/shared/types';
+import { Message, ToolCallDisplay, PageContext, MessageType, Session } from '@/shared/types';
 import { uid } from '@/shared/message-bus';
+import { saveSession } from '@/shared/storage';
 
 interface UseAgentReturn {
   messages: Message[];
   isStreaming: boolean;
   streamingText: string;
   activeTools: ToolCallDisplay[];
+  sessionId: string;
   sendMessage: (text: string, context?: PageContext) => void;
   clearMessages: () => void;
+  restoreSession: (session: Session) => void;
+  newSession: () => void;
 }
 
 export function useAgent(): UseAgentReturn {
@@ -16,7 +20,14 @@ export function useAgent(): UseAgentReturn {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState('');
   const [activeTools, setActiveTools] = useState<ToolCallDisplay[]>([]);
+  const [sessionId, setSessionId] = useState(() => uid());
   const portRef = useRef<chrome.runtime.Port | null>(null);
+  const sessionRef = useRef<Session>({
+    id: sessionId,
+    messages: [],
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  });
 
   useEffect(() => {
     // Check for pending message from command palette
@@ -32,10 +43,26 @@ export function useAgent(): UseAgentReturn {
     return () => { portRef.current?.disconnect(); };
   }, []);
 
+  const persistSession = useCallback((msgs: Message[]) => {
+    const session = sessionRef.current;
+    session.messages = msgs;
+    session.updatedAt = Date.now();
+    if (!session.title && msgs.length > 0) {
+      const firstUserMsg = msgs.find(m => m.role === 'user');
+      if (firstUserMsg) {
+        session.title = firstUserMsg.content.slice(0, 80);
+      }
+    }
+    saveSession({ ...session });
+  }, []);
+
   const sendMessage = useCallback((text: string, context?: PageContext) => {
     // Add user message
     const userMsg: Message = { id: uid(), role: 'user', content: text, timestamp: Date.now() };
-    setMessages(prev => [...prev, userMsg]);
+    setMessages(prev => {
+      const next = [...prev, userMsg];
+      return next;
+    });
     setIsStreaming(true);
     setStreamingText('');
     setActiveTools([]);
@@ -75,9 +102,13 @@ export function useAgent(): UseAgentReturn {
             role: 'assistant',
             content: msg.payload.finalText,
             timestamp: Date.now(),
-            toolCalls: undefined, // will be set from activeTools
+            toolCalls: undefined,
           };
-          setMessages(prev => [...prev, assistantMsg]);
+          setMessages(prev => {
+            const next = [...prev, assistantMsg];
+            persistSession(next);
+            return next;
+          });
           setIsStreaming(false);
           setStreamingText('');
           setActiveTools([]);
@@ -86,12 +117,17 @@ export function useAgent(): UseAgentReturn {
         }
 
         case 'AGENT_ERROR':
-          setMessages(prev => [...prev, {
-            id: uid(),
-            role: 'assistant',
-            content: `Error: ${msg.payload.error}`,
-            timestamp: Date.now(),
-          }]);
+          setMessages(prev => {
+            const errorMsg: Message = {
+              id: uid(),
+              role: 'assistant',
+              content: `Error: ${msg.payload.error}`,
+              timestamp: Date.now(),
+            };
+            const next = [...prev, errorMsg];
+            persistSession(next);
+            return next;
+          });
           setIsStreaming(false);
           setStreamingText('');
           setActiveTools([]);
@@ -117,7 +153,7 @@ export function useAgent(): UseAgentReturn {
         });
       }
     });
-  }, []);
+  }, [persistSession]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
@@ -126,5 +162,36 @@ export function useAgent(): UseAgentReturn {
     setIsStreaming(false);
   }, []);
 
-  return { messages, isStreaming, streamingText, activeTools, sendMessage, clearMessages };
+  const restoreSession = useCallback((session: Session) => {
+    portRef.current?.disconnect();
+    setSessionId(session.id);
+    setMessages(session.messages);
+    setStreamingText('');
+    setActiveTools([]);
+    setIsStreaming(false);
+    sessionRef.current = { ...session };
+  }, []);
+
+  const newSession = useCallback(() => {
+    portRef.current?.disconnect();
+    const newId = uid();
+    setSessionId(newId);
+    setMessages([]);
+    setStreamingText('');
+    setActiveTools([]);
+    setIsStreaming(false);
+    sessionRef.current = {
+      id: newId,
+      messages: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    // Reset background session
+    chrome.runtime.sendMessage({ type: 'QUICK_ACTION', payload: { action: 'new_chat' } });
+  }, []);
+
+  return {
+    messages, isStreaming, streamingText, activeTools, sessionId,
+    sendMessage, clearMessages, restoreSession, newSession,
+  };
 }

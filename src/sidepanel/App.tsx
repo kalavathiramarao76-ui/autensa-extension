@@ -1,12 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ChatView } from '../ui/views/ChatView';
 import { SettingsView } from '../ui/views/SettingsView';
+import { HistoryView } from '../ui/views/HistoryView';
 import { useSettings } from '../ui/hooks/useSettings';
 import { ErrorBoundary } from '../ui/components/ErrorBoundary';
+import { Session } from '@/shared/types';
 
 function AppInner() {
-  const [view, setView] = useState<'chat' | 'settings'>('chat');
+  const [view, setView] = useState<'chat' | 'settings' | 'history'>('chat');
+  const [sessionToRestore, setSessionToRestore] = useState<Session | null>(null);
   const { isConfigured, loading } = useSettings();
+
+  const handleSelectSession = useCallback((session: Session) => {
+    setSessionToRestore(session);
+    setView('chat');
+  }, []);
+
+  const handleSessionRestored = useCallback(() => {
+    setSessionToRestore(null);
+  }, []);
 
   if (!loading && !isConfigured && view !== 'settings') {
     return (
@@ -27,9 +39,13 @@ function AppInner() {
 
   return (
     <div className="h-screen flex flex-col">
-      {view === 'chat' ? (
+      {view === 'chat' && (
         <>
-          <ChatView />
+          <ChatView
+            onOpenHistory={() => setView('history')}
+            sessionToRestore={sessionToRestore}
+            onSessionRestored={handleSessionRestored}
+          />
           <div className="px-4 pb-3 flex justify-end">
             <button onClick={() => setView('settings')} className="btn-ghost text-2xs flex items-center gap-1">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -39,8 +55,15 @@ function AppInner() {
             </button>
           </div>
         </>
-      ) : (
+      )}
+      {view === 'settings' && (
         <SettingsView onBack={() => setView('chat')} />
+      )}
+      {view === 'history' && (
+        <HistoryView
+          onBack={() => setView('chat')}
+          onSelectSession={handleSelectSession}
+        />
       )}
     </div>
   );
