@@ -1,3 +1,11 @@
+// === Usage / Token Tracking ===
+export interface UsageData {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  estimated: boolean; // true = heuristic, false = from API
+}
+
 // === Message Protocol ===
 export type MessageType =
   | { type: 'AGENT_REQUEST'; payload: { message: string; context?: PageContext; sessionId?: string } }
@@ -5,7 +13,9 @@ export type MessageType =
   | { type: 'AGENT_TOOL_START'; payload: { toolName: string; args: unknown; id: string } }
   | { type: 'AGENT_TOOL_RESULT'; payload: { toolName: string; result: string; id: string; success: boolean } }
   | { type: 'AGENT_COMPLETE'; payload: { finalText: string; id: string } }
-  | { type: 'AGENT_ERROR'; payload: { error: string; id: string } }
+  | { type: 'AGENT_USAGE'; payload: { usage: UsageData; id: string } }
+  | { type: 'AGENT_ERROR'; payload: { error: string; id: string; retryAfter?: number } }
+  | { type: 'AGENT_RATE_LIMIT'; payload: { requestsPerMinute: number; retryAfter?: number } }
   | { type: 'GET_PAGE_CONTEXT' }
   | { type: 'PAGE_CONTEXT_RESULT'; payload: PageContext }
   | { type: 'OPEN_SIDE_PANEL' }
@@ -29,6 +39,7 @@ export interface Message {
   content: string;
   timestamp: number;
   toolCalls?: ToolCallDisplay[];
+  usage?: UsageData;
 }
 
 export interface ToolCallDisplay {

@@ -1,10 +1,25 @@
-import { MessageType, Session, Message, ClaudeMessage, ClaudeContent } from '@/shared/types';
+import { MessageType, Session, Message, ClaudeMessage, ClaudeContent, UsageData } from '@/shared/types';
 import { uid } from '@/shared/message-bus';
 import { saveSession, getSessions } from '@/shared/storage';
+import { estimateTokens } from '@/shared/tokenizer';
 import { runAgent } from './agent-executor';
 
 // Session state
 let currentSession: Session | null = null;
+
+// ─── Rate Limit Tracking ───
+const requestTimestamps: number[] = [];
+const RATE_WINDOW_MS = 60_000; // 1 minute window
+
+function trackRequest(): number {
+  const now = Date.now();
+  requestTimestamps.push(now);
+  // Prune old entries
+  while (requestTimestamps.length > 0 && requestTimestamps[0] < now - RATE_WINDOW_MS) {
+    requestTimestamps.shift();
+  }
+  return requestTimestamps.length;
+}
 
 function ensureSession(): Session {
   if (!currentSession) {
@@ -53,6 +68,15 @@ chrome.runtime.onConnect.addListener((port) => {
 
     let assistantText = '';
     const toolCalls: Message['toolCalls'] = [];
+    let accumulatedUsage: UsageData | null = null;
+
+    // Track this request for rate limiting
+    const rpm = trackRequest();
+    if (rpm > 15) {
+      try {
+        port.postMessage({ type: 'AGENT_RATE_LIMIT', payload: { requestsPerMinute: rpm } } as MessageType);
+      } catch {}
+    }
 
     try {
       await runAgent(
@@ -79,19 +103,47 @@ chrome.runtime.onConnect.addListener((port) => {
               port.postMessage({ type: 'AGENT_TOOL_RESULT', payload: { toolName: name, result, id, success } });
             } catch {}
           },
+          onUsage(usage) {
+            // Accumulate usage across iterations
+            if (!accumulatedUsage) {
+              accumulatedUsage = { ...usage };
+            } else {
+              accumulatedUsage.promptTokens += usage.promptTokens;
+              accumulatedUsage.completionTokens += usage.completionTokens;
+              accumulatedUsage.totalTokens += usage.totalTokens;
+              if (!usage.estimated) accumulatedUsage.estimated = false;
+            }
+          },
+          onRateLimited(retryAfter) {
+            try {
+              port.postMessage({ type: 'AGENT_RATE_LIMIT', payload: { requestsPerMinute: rpm, retryAfter } } as MessageType);
+            } catch {}
+          },
           onComplete(finalText) {
+            const content = finalText || assistantText;
+
+            // Build usage — use API data if available, else estimate
+            const usage: UsageData = accumulatedUsage || {
+              promptTokens: estimateTokens(msg.payload.message),
+              completionTokens: estimateTokens(content),
+              totalTokens: estimateTokens(msg.payload.message) + estimateTokens(content),
+              estimated: true,
+            };
+
             const assistantMsg: Message = {
               id: uid(),
               role: 'assistant',
-              content: finalText || assistantText,
+              content,
               timestamp: Date.now(),
               toolCalls: toolCalls.length > 0 ? [...toolCalls] : undefined,
+              usage,
             };
             session.messages.push(assistantMsg);
             session.updatedAt = Date.now();
             saveSession(session);
             try {
-              port.postMessage({ type: 'AGENT_COMPLETE', payload: { finalText: finalText || assistantText, id: requestId } });
+              port.postMessage({ type: 'AGENT_COMPLETE', payload: { finalText: content, id: requestId } });
+              port.postMessage({ type: 'AGENT_USAGE', payload: { usage, id: requestId } } as MessageType);
             } catch {}
           },
           onError(error) {

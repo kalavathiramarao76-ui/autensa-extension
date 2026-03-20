@@ -1,12 +1,14 @@
-import { ClaudeMessage, ClaudeToolDef } from '@/shared/types';
+import { ClaudeMessage, ClaudeToolDef, UsageData } from '@/shared/types';
 import { CLAUDE_API_URL, SYSTEM_PROMPT } from '@/shared/constants';
 import { getSettings } from '@/shared/storage';
 
-interface StreamCallbacks {
+export interface StreamCallbacks {
   onText: (text: string) => void;
   onToolUse: (id: string, name: string, input: unknown) => void;
   onComplete: (stopReason: string) => void;
   onError: (error: string) => void;
+  onUsage?: (usage: UsageData) => void;
+  onRateLimited?: (retryAfter: number) => void;
 }
 
 export async function streamClaude(
@@ -52,6 +54,12 @@ export async function streamClaude(
   }
 
   if (!response.ok) {
+    if (response.status === 429) {
+      const retryAfter = parseInt(response.headers.get('retry-after') || '60', 10);
+      callbacks.onRateLimited?.(retryAfter);
+      callbacks.onError(`Rate limited — retry in ${retryAfter}s`);
+      return;
+    }
     const errText = await response.text().catch(() => 'Unknown error');
     callbacks.onError(`Claude API error ${response.status}: ${errText}`);
     return;
@@ -109,6 +117,12 @@ async function streamOllama(
   }
 
   if (!response.ok) {
+    if (response.status === 429) {
+      const retryAfter = parseInt(response.headers.get('retry-after') || '60', 10);
+      callbacks.onRateLimited?.(retryAfter);
+      callbacks.onError(`Rate limited — retry in ${retryAfter}s`);
+      return;
+    }
     const errText = await response.text().catch(() => '');
     callbacks.onError(`Model API error ${response.status}: ${errText || 'Request rejected'}`);
     return;
@@ -122,6 +136,16 @@ async function streamOllama(
       const json = await response.json();
       const text = json.choices?.[0]?.message?.content || '';
       if (text) callbacks.onText(text);
+
+      // Parse usage data if available
+      if (json.usage) {
+        callbacks.onUsage?.({
+          promptTokens: json.usage.prompt_tokens || 0,
+          completionTokens: json.usage.completion_tokens || 0,
+          totalTokens: json.usage.total_tokens || (json.usage.prompt_tokens || 0) + (json.usage.completion_tokens || 0),
+          estimated: false,
+        });
+      }
 
       // Handle tool calls in non-streaming response
       const toolCalls = json.choices?.[0]?.message?.tool_calls;
@@ -257,6 +281,16 @@ async function parseOpenAIStream(response: Response, callbacks: StreamCallbacks)
           continue;
         }
 
+        // Parse usage from streaming chunk (OpenAI sends it in the final chunk)
+        if (chunk.usage) {
+          callbacks.onUsage?.({
+            promptTokens: chunk.usage.prompt_tokens || 0,
+            completionTokens: chunk.usage.completion_tokens || 0,
+            totalTokens: chunk.usage.total_tokens || (chunk.usage.prompt_tokens || 0) + (chunk.usage.completion_tokens || 0),
+            estimated: false,
+          });
+        }
+
         // OpenAI streaming format
         const choice = chunk.choices?.[0];
         if (!choice) continue;
@@ -359,7 +393,27 @@ async function parseAnthropicStream(response: Response, callbacks: StreamCallbac
               toolInputJson = '';
             }
             break;
+          case 'message_start':
+            // Anthropic sends input_tokens on message_start
+            if (event.message?.usage) {
+              callbacks.onUsage?.({
+                promptTokens: event.message.usage.input_tokens || 0,
+                completionTokens: event.message.usage.output_tokens || 0,
+                totalTokens: (event.message.usage.input_tokens || 0) + (event.message.usage.output_tokens || 0),
+                estimated: false,
+              });
+            }
+            break;
           case 'message_delta':
+            // Anthropic sends output_tokens on message_delta at end
+            if (event.usage) {
+              callbacks.onUsage?.({
+                promptTokens: 0,
+                completionTokens: event.usage.output_tokens || 0,
+                totalTokens: event.usage.output_tokens || 0,
+                estimated: false,
+              });
+            }
             if (event.delta?.stop_reason) callbacks.onComplete(event.delta.stop_reason);
             break;
           case 'error':

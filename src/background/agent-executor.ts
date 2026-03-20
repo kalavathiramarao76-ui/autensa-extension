@@ -1,4 +1,4 @@
-import { ClaudeMessage, ClaudeContent, PageContext } from '@/shared/types';
+import { ClaudeMessage, ClaudeContent, PageContext, UsageData } from '@/shared/types';
 import { streamClaude } from './api/claude';
 import { registry } from './tools/registry';
 import { getSettings } from '@/shared/storage';
@@ -9,6 +9,8 @@ interface AgentCallbacks {
   onToolResult: (id: string, name: string, result: string, success: boolean) => void;
   onComplete: (fullText: string) => void;
   onError: (error: string) => void;
+  onUsage?: (usage: UsageData) => void;
+  onRateLimited?: (retryAfter: number) => void;
 }
 
 export async function runAgent(
@@ -64,6 +66,12 @@ export async function runAgent(
           onError(error) {
             clearTimeout(timeout);
             reject(new Error(error));
+          },
+          onUsage(usage) {
+            callbacks.onUsage?.(usage);
+          },
+          onRateLimited(retryAfter) {
+            callbacks.onRateLimited?.(retryAfter);
           },
         });
       });

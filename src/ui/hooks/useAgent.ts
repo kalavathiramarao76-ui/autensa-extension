@@ -1,7 +1,14 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Message, ToolCallDisplay, PageContext, MessageType, Session } from '@/shared/types';
+import { Message, ToolCallDisplay, PageContext, MessageType, Session, UsageData } from '@/shared/types';
 import { uid } from '@/shared/message-bus';
 import { saveSession } from '@/shared/storage';
+
+export interface RateLimitState {
+  warning: boolean;          // true when >15 req/min
+  limited: boolean;          // true when 429 received
+  retryAfter: number;        // seconds remaining
+  requestsPerMinute: number;
+}
 
 interface UseAgentReturn {
   messages: Message[];
@@ -9,6 +16,8 @@ interface UseAgentReturn {
   streamingText: string;
   activeTools: ToolCallDisplay[];
   sessionId: string;
+  sessionUsage: UsageData;
+  rateLimit: RateLimitState;
   sendMessage: (text: string, context?: PageContext) => void;
   clearMessages: () => void;
   restoreSession: (session: Session) => void;
@@ -21,7 +30,14 @@ export function useAgent(): UseAgentReturn {
   const [streamingText, setStreamingText] = useState('');
   const [activeTools, setActiveTools] = useState<ToolCallDisplay[]>([]);
   const [sessionId, setSessionId] = useState(() => uid());
+  const [sessionUsage, setSessionUsage] = useState<UsageData>({
+    promptTokens: 0, completionTokens: 0, totalTokens: 0, estimated: true,
+  });
+  const [rateLimit, setRateLimit] = useState<RateLimitState>({
+    warning: false, limited: false, retryAfter: 0, requestsPerMinute: 0,
+  });
   const portRef = useRef<chrome.runtime.Port | null>(null);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionRef = useRef<Session>({
     id: sessionId,
     messages: [],
@@ -116,6 +132,41 @@ export function useAgent(): UseAgentReturn {
           break;
         }
 
+        case 'AGENT_USAGE': {
+          const u = msg.payload.usage;
+          setSessionUsage(prev => ({
+            promptTokens: prev.promptTokens + u.promptTokens,
+            completionTokens: prev.completionTokens + u.completionTokens,
+            totalTokens: prev.totalTokens + u.totalTokens,
+            estimated: prev.estimated && u.estimated,
+          }));
+          break;
+        }
+
+        case 'AGENT_RATE_LIMIT': {
+          const { requestsPerMinute, retryAfter } = msg.payload;
+          if (retryAfter) {
+            // 429 — start cooldown timer
+            setRateLimit({ warning: true, limited: true, retryAfter, requestsPerMinute });
+            // Clear any existing timer
+            if (cooldownRef.current) clearInterval(cooldownRef.current);
+            cooldownRef.current = setInterval(() => {
+              setRateLimit(prev => {
+                const next = prev.retryAfter - 1;
+                if (next <= 0) {
+                  if (cooldownRef.current) clearInterval(cooldownRef.current);
+                  cooldownRef.current = null;
+                  return { warning: false, limited: false, retryAfter: 0, requestsPerMinute: 0 };
+                }
+                return { ...prev, retryAfter: next };
+              });
+            }, 1000);
+          } else {
+            setRateLimit(prev => ({ ...prev, warning: true, requestsPerMinute }));
+          }
+          break;
+        }
+
         case 'AGENT_ERROR':
           setMessages(prev => {
             const errorMsg: Message = {
@@ -169,17 +220,32 @@ export function useAgent(): UseAgentReturn {
     setStreamingText('');
     setActiveTools([]);
     setIsStreaming(false);
+    // Recompute session usage from restored messages
+    const restored: UsageData = { promptTokens: 0, completionTokens: 0, totalTokens: 0, estimated: true };
+    for (const m of session.messages) {
+      if (m.usage) {
+        restored.promptTokens += m.usage.promptTokens;
+        restored.completionTokens += m.usage.completionTokens;
+        restored.totalTokens += m.usage.totalTokens;
+        if (!m.usage.estimated) restored.estimated = false;
+      }
+    }
+    setSessionUsage(restored);
+    setRateLimit({ warning: false, limited: false, retryAfter: 0, requestsPerMinute: 0 });
     sessionRef.current = { ...session };
   }, []);
 
   const newSession = useCallback(() => {
     portRef.current?.disconnect();
+    if (cooldownRef.current) { clearInterval(cooldownRef.current); cooldownRef.current = null; }
     const newId = uid();
     setSessionId(newId);
     setMessages([]);
     setStreamingText('');
     setActiveTools([]);
     setIsStreaming(false);
+    setSessionUsage({ promptTokens: 0, completionTokens: 0, totalTokens: 0, estimated: true });
+    setRateLimit({ warning: false, limited: false, retryAfter: 0, requestsPerMinute: 0 });
     sessionRef.current = {
       id: newId,
       messages: [],
@@ -192,6 +258,7 @@ export function useAgent(): UseAgentReturn {
 
   return {
     messages, isStreaming, streamingText, activeTools, sessionId,
+    sessionUsage, rateLimit,
     sendMessage, clearMessages, restoreSession, newSession,
   };
 }
