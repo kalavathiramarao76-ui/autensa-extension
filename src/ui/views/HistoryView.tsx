@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Session } from '@/shared/types';
 import { getSessions, deleteSession } from '@/shared/storage';
 import { Skeleton } from '../components/Skeleton';
@@ -42,6 +42,9 @@ export function HistoryView({ onBack, onSelectSession, activeSessionId }: Props)
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const listRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const loadSessions = useCallback(async () => {
     const data = await getSessions();
@@ -52,6 +55,71 @@ export function HistoryView({ onBack, onSelectSession, activeSessionId }: Props)
   useEffect(() => {
     loadSessions();
   }, [loadSessions]);
+
+  // Scroll selected item into view
+  useEffect(() => {
+    const el = itemRefs.current[selectedIndex];
+    if (el) {
+      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [selectedIndex]);
+
+  // Arrow key navigation
+  useEffect(() => {
+    if (loading || sessions.length === 0) return;
+
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInput =
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable;
+      if (isInput) return;
+
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          setSelectedIndex(prev => Math.min(prev + 1, sessions.length - 1));
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setSelectedIndex(prev => Math.max(prev - 1, 0));
+          break;
+        case 'Enter':
+          e.preventDefault();
+          if (selectedIndex >= 0 && selectedIndex < sessions.length) {
+            onSelectSession(sessions[selectedIndex]);
+          }
+          break;
+        case 'Delete':
+        case 'Backspace':
+          if (selectedIndex >= 0 && selectedIndex < sessions.length) {
+            const sid = sessions[selectedIndex].id;
+            if (deletingId === sid) {
+              // Confirm delete
+              e.preventDefault();
+              deleteSession(sid).then(() => {
+                setSessions(prev => prev.filter(s => s.id !== sid));
+                setDeletingId(null);
+                setSelectedIndex(prev => Math.min(prev, sessions.length - 2));
+              });
+            } else {
+              e.preventDefault();
+              setDeletingId(sid);
+              setTimeout(() => setDeletingId(prev => prev === sid ? null : prev), 3000);
+            }
+          }
+          break;
+        case 'Escape':
+          e.preventDefault();
+          onBack();
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [loading, sessions, selectedIndex, deletingId, onBack, onSelectSession]);
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -71,7 +139,7 @@ export function HistoryView({ onBack, onSelectSession, activeSessionId }: Props)
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center gap-3 px-5 py-3 border-b border-border">
-        <button onClick={onBack} className="btn-ghost !p-1.5">
+        <button onClick={onBack} className="btn-ghost !p-1.5 outline-none focus-visible:ring-2 focus-visible:ring-accent/40">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
           </svg>
@@ -79,11 +147,14 @@ export function HistoryView({ onBack, onSelectSession, activeSessionId }: Props)
         <span className="text-sm font-semibold text-text-primary">History</span>
         <span className="text-2xs text-text-tertiary ml-auto">
           {sessions.length} conversation{sessions.length !== 1 ? 's' : ''}
+          {sessions.length > 0 && (
+            <span className="ml-2 text-text-tertiary/50">↑↓ navigate</span>
+          )}
         </span>
       </div>
 
       {/* Session List */}
-      <div className="flex-1 overflow-y-auto">
+      <div ref={listRef} className="flex-1 overflow-y-auto" role="listbox" aria-label="Chat sessions">
         {loading && (
           <div className="p-5 space-y-4">
             {[0, 1, 2].map(i => (
@@ -114,6 +185,7 @@ export function HistoryView({ onBack, onSelectSession, activeSessionId }: Props)
         {!loading && sessions.map((session, index) => {
           const isActive = session.id === activeSessionId;
           const isDeleting = deletingId === session.id;
+          const isSelected = selectedIndex === index;
           const title = sessionTitle(session);
           const preview = sessionPreview(session);
           const msgCount = session.messages.length;
@@ -121,10 +193,16 @@ export function HistoryView({ onBack, onSelectSession, activeSessionId }: Props)
           return (
             <button
               key={session.id}
+              ref={el => { itemRefs.current[index] = el; }}
               onClick={() => onSelectSession(session)}
+              onMouseEnter={() => setSelectedIndex(index)}
+              role="option"
+              aria-selected={isSelected}
               className={`
-                history-item group
+                history-item group outline-none
                 ${isActive ? 'history-item-active' : ''}
+                ${isSelected && !isActive ? 'bg-surface-2 border-l-2 border-l-accent/40' : ''}
+                ${isSelected ? 'ring-1 ring-inset ring-accent/20' : ''}
               `}
               style={{
                 animation: `fadeIn 150ms ease-out ${index * 30}ms both`,
@@ -151,6 +229,12 @@ export function HistoryView({ onBack, onSelectSession, activeSessionId }: Props)
                     <span className="text-2xs text-text-tertiary">
                       {timeAgo(session.updatedAt)}
                     </span>
+                    {isDeleting && (
+                      <>
+                        <span className="text-text-tertiary text-2xs">·</span>
+                        <span className="text-2xs text-error animate-fade-in">Press again to delete</span>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -158,7 +242,8 @@ export function HistoryView({ onBack, onSelectSession, activeSessionId }: Props)
                   onClick={(e) => handleDelete(e, session.id)}
                   className={`
                     mt-0.5 p-1.5 rounded-lg transition-all duration-150
-                    opacity-0 group-hover:opacity-100
+                    outline-none focus-visible:ring-2 focus-visible:ring-accent/40
+                    ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
                     ${isDeleting
                       ? 'bg-error/20 text-error opacity-100'
                       : 'hover:bg-surface-4 text-text-tertiary hover:text-text-secondary'

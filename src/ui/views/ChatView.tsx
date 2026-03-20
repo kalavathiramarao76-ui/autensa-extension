@@ -1,22 +1,33 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { useAgent } from '../hooks/useAgent';
 import { useSettings } from '../hooks/useSettings';
 import { MessageBubble } from '../components/MessageBubble';
 import { StreamingText } from '../components/StreamingText';
 import { ToolExecution } from '../components/ToolExecution';
-import { Input } from '../components/Input';
+import { Input, InputHandle } from '../components/Input';
 import { ConnectionStatus } from '../components/ConnectionStatus';
 import { QUICK_ACTIONS } from '@/shared/constants';
 import { Session } from '@/shared/types';
 import { estimateTokens, formatTokenCount } from '@/shared/tokenizer';
+import { gridNav, MOD_KEY } from '../hooks/useKeyboardNav';
 
 interface ChatViewProps {
   onOpenHistory?: () => void;
+  onOpenSettings?: () => void;
   sessionToRestore?: Session | null;
   onSessionRestored?: () => void;
 }
 
-export function ChatView({ onOpenHistory, sessionToRestore, onSessionRestored }: ChatViewProps) {
+export interface ChatViewHandle {
+  focusInput: () => void;
+  clearAndFocus: () => void;
+  newChat: () => void;
+}
+
+export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatView(
+  { onOpenHistory, onOpenSettings, sessionToRestore, onSessionRestored },
+  fwdRef,
+) {
   const {
     messages, isStreaming, streamingText, activeTools, sessionId,
     sessionUsage, rateLimit,
@@ -25,9 +36,28 @@ export function ChatView({ onOpenHistory, sessionToRestore, onSessionRestored }:
   const { settings } = useSettings();
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<InputHandle>(null);
+
+  // Quick actions grid keyboard state
+  const [qaIndex, setQaIndex] = useState(-1);
+  const qaItems = QUICK_ACTIONS.slice(0, 4);
 
   // Live input token count
   const inputTokens = useMemo(() => estimateTokens(input), [input]);
+
+  // Expose imperative handle to parent
+  useImperativeHandle(fwdRef, () => ({
+    focusInput: () => inputRef.current?.focus(),
+    clearAndFocus: () => {
+      setInput('');
+      setTimeout(() => inputRef.current?.focus(), 0);
+    },
+    newChat: () => {
+      newSession();
+      setInput('');
+      setTimeout(() => inputRef.current?.focus(), 0);
+    },
+  }));
 
   // Handle session restore from history
   useEffect(() => {
@@ -60,6 +90,37 @@ export function ChatView({ onOpenHistory, sessionToRestore, onSessionRestored }:
 
   const isEmpty = messages.length === 0 && !isStreaming;
 
+  // Quick actions grid keyboard navigation
+  useEffect(() => {
+    if (!isEmpty) { setQaIndex(-1); return; }
+
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInput =
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable;
+      if (isInput) return;
+
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault();
+        setQaIndex(prev => {
+          const cur = prev < 0 ? 0 : prev;
+          return gridNav(cur, e.key, 2, qaItems.length);
+        });
+      }
+
+      if (e.key === 'Enter' && qaIndex >= 0) {
+        e.preventDefault();
+        handleQuickAction(qaItems[qaIndex].prompt);
+        setQaIndex(-1);
+      }
+    };
+
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [isEmpty, qaIndex, qaItems]);
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -74,18 +135,32 @@ export function ChatView({ onOpenHistory, sessionToRestore, onSessionRestored }:
         </div>
         <div className="flex items-center gap-1">
           {onOpenHistory && (
-            <button onClick={onOpenHistory} className="btn-ghost !px-2 !py-1 text-xs" title="History">
+            <button
+              onClick={onOpenHistory}
+              className="btn-ghost !px-2 !py-1 text-xs group/hint relative"
+              title="History"
+            >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10"/>
                 <polyline points="12 6 12 12 16 14"/>
               </svg>
+              <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-2xs text-text-tertiary opacity-0 group-hover/hint:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                {MOD_KEY}H
+              </span>
             </button>
           )}
           {messages.length > 0 && (
-            <button onClick={handleNewChat} className="btn-ghost !px-2 !py-1 text-xs" title="New chat">
+            <button
+              onClick={handleNewChat}
+              className="btn-ghost !px-2 !py-1 text-xs group/hint relative"
+              title="New chat"
+            >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 5v14M5 12h14"/>
               </svg>
+              <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-2xs text-text-tertiary opacity-0 group-hover/hint:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                {MOD_KEY}N
+              </span>
             </button>
           )}
         </div>
@@ -102,13 +177,18 @@ export function ChatView({ onOpenHistory, sessionToRestore, onSessionRestored }:
                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
               </svg>
             </div>
-            <p className="text-text-secondary text-sm mb-6">What can I do for you?</p>
+            <p className="text-text-secondary text-sm mb-1">What can I do for you?</p>
+            <p className="text-text-tertiary text-2xs mb-6">
+              Press <kbd className="px-1 py-0.5 rounded bg-surface-3 text-text-tertiary font-mono text-2xs">/</kbd> to start typing
+            </p>
             <div className="grid grid-cols-2 gap-2 w-full max-w-xs">
-              {QUICK_ACTIONS.slice(0, 4).map(action => (
+              {qaItems.map((action, idx) => (
                 <button
                   key={action.id}
                   onClick={() => handleQuickAction(action.prompt)}
-                  className="card-interactive !p-3 text-left group"
+                  className={`card-interactive !p-3 text-left group outline-none
+                    ${qaIndex === idx ? 'ring-2 ring-accent/50 border-accent/30 bg-surface-2' : ''}
+                  `}
                 >
                   <span className="text-lg mb-1 block">{action.icon}</span>
                   <span className="text-xs text-text-secondary group-hover:text-text-primary transition-colors">
@@ -178,6 +258,7 @@ export function ChatView({ onOpenHistory, sessionToRestore, onSessionRestored }:
         )}
 
         <Input
+          ref={inputRef}
           value={input}
           onChange={setInput}
           onSubmit={handleSubmit}
@@ -195,4 +276,4 @@ export function ChatView({ onOpenHistory, sessionToRestore, onSessionRestored }:
       </div>
     </div>
   );
-}
+});

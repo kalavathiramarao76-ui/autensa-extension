@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, KeyboardEvent } from 'react';
+import React, { useRef, useEffect, useImperativeHandle, forwardRef, KeyboardEvent } from 'react';
 
 interface Props {
   value: string;
@@ -9,8 +9,23 @@ interface Props {
   autoFocus?: boolean;
 }
 
-export function Input({ value, onChange, onSubmit, placeholder = 'Message Autensa...', disabled, autoFocus }: Props) {
+export interface InputHandle {
+  focus: () => void;
+  blur: () => void;
+  isFocused: () => boolean;
+}
+
+export const Input = forwardRef<InputHandle, Props>(function Input(
+  { value, onChange, onSubmit, placeholder = 'Message Autensa...', disabled, autoFocus },
+  fwdRef,
+) {
   const ref = useRef<HTMLTextAreaElement>(null);
+
+  useImperativeHandle(fwdRef, () => ({
+    focus: () => ref.current?.focus(),
+    blur: () => ref.current?.blur(),
+    isFocused: () => document.activeElement === ref.current,
+  }));
 
   useEffect(() => {
     if (ref.current) {
@@ -49,7 +64,8 @@ export function Input({ value, onChange, onSubmit, placeholder = 'Message Autens
         className="absolute right-2 bottom-2 w-8 h-8 flex items-center justify-center
                    rounded-lg bg-accent text-white transition-all duration-150
                    hover:bg-accent-hover disabled:opacity-30 disabled:hover:bg-accent
-                   active:scale-90"
+                   active:scale-90
+                   outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M5 12h14M12 5l7 7-7 7"/>
@@ -57,4 +73,4 @@ export function Input({ value, onChange, onSubmit, placeholder = 'Message Autens
       </button>
     </div>
   );
-}
+});

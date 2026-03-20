@@ -120,10 +120,16 @@
   .history-item {
     @apply w-full text-left px-5 py-3.5 border-b border-border/50
            transition-all duration-150 cursor-pointer
-           hover:bg-surface-2 hover:border-l-2 hover:border-l-accent/40;
+           hover:bg-surface-2 hover:border-l-2 hover:border-l-accent/40
+           outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/40;
   }
   .history-item-active {
     @apply bg-surface-2 border-l-2 border-l-accent;
+  }
+
+  /* ── Card interactive focus ring ── */
+  .card-interactive {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-accent/40;
   }
 
   /* ── Provider toggle with background slide ── */
