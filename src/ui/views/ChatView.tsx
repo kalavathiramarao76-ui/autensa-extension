@@ -6,8 +6,9 @@ import { StreamingText } from '../components/StreamingText';
 import { ToolExecution } from '../components/ToolExecution';
 import { Input, InputHandle } from '../components/Input';
 import { ConnectionStatus } from '../components/ConnectionStatus';
+import { useToast } from '../components/Toast';
 import { QUICK_ACTIONS } from '@/shared/constants';
-import { Session } from '@/shared/types';
+import { Session, ToolCallDisplay } from '@/shared/types';
 import { estimateTokens, formatTokenCount } from '@/shared/tokenizer';
 import { gridNav, MOD_KEY } from '../hooks/useKeyboardNav';
 
@@ -34,9 +35,11 @@ export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatV
     sendMessage, clearMessages, restoreSession, newSession,
   } = useAgent();
   const { settings } = useSettings();
+  const { toast } = useToast();
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<InputHandle>(null);
+  const prevToolsRef = useRef<ToolCallDisplay[]>([]);
 
   // Quick actions grid keyboard state
   const [qaIndex, setQaIndex] = useState(-1);
@@ -64,14 +67,35 @@ export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatV
     if (sessionToRestore) {
       restoreSession(sessionToRestore);
       onSessionRestored?.();
+      toast({ type: 'info', title: 'Session restored' });
     }
-  }, [sessionToRestore, restoreSession, onSessionRestored]);
+  }, [sessionToRestore, restoreSession, onSessionRestored, toast]);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, streamingText, activeTools]);
+
+  // Toast on tool completion
+  useEffect(() => {
+    const prev = prevToolsRef.current;
+    for (const tool of activeTools) {
+      const wasPrev = prev.find(t => t.id === tool.id);
+      if (wasPrev?.status === 'running' && (tool.status === 'success' || tool.status === 'error')) {
+        const label = tool.name
+          .replace(/_/g, ' ')
+          .replace(/\b\w/g, c => c.toUpperCase());
+        if (tool.status === 'success') {
+          toast({ type: 'success', title: `${label}` });
+        } else {
+          const snippet = tool.result ? tool.result.slice(0, 80) : 'Unknown error';
+          toast({ type: 'error', title: `Failed: ${label}`, description: snippet });
+        }
+      }
+    }
+    prevToolsRef.current = activeTools;
+  }, [activeTools, toast]);
 
   const handleSubmit = () => {
     if (!input.trim() || isStreaming) return;
@@ -86,6 +110,7 @@ export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatV
 
   const handleNewChat = () => {
     newSession();
+    toast({ type: 'info', title: 'Chat cleared' });
   };
 
   const isEmpty = messages.length === 0 && !isStreaming;

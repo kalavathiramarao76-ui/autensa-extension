@@ -54,6 +54,8 @@ export default {
         'scale-in': 'scaleIn 200ms cubic-bezier(0.16,1,0.3,1)',
         'thinking-bar': 'thinkingBar 1.8s ease-in-out infinite',
         'dot-bounce': 'dotBounce 1.4s ease-in-out infinite',
+        'toast-enter': 'toastEnter 250ms cubic-bezier(0.16,1,0.3,1)',
+        'toast-exit': 'toastExit 220ms ease-in forwards',
       },
       keyframes: {
         fadeIn: { from: { opacity: '0' }, to: { opacity: '1' } },
@@ -66,6 +68,8 @@ export default {
         scaleIn: { from: { opacity: '0', transform: 'scale(0.92)' }, to: { opacity: '1', transform: 'scale(1)' } },
         thinkingBar: { '0%': { backgroundPosition: '-200% 0' }, '100%': { backgroundPosition: '200% 0' } },
         dotBounce: { '0%, 80%, 100%': { transform: 'scale(0.6)', opacity: '0.4' }, '40%': { transform: 'scale(1)', opacity: '1' } },
+        toastEnter: { from: { opacity: '0', transform: 'translateY(12px) scale(0.95)' }, to: { opacity: '1', transform: 'translateY(0) scale(1)' } },
+        toastExit: { from: { opacity: '1', transform: 'translateX(0)' }, to: { opacity: '0', transform: 'translateX(100%)' } },
       },
     },
   },

@@ -5,6 +5,7 @@ import { HistoryView } from '../ui/views/HistoryView';
 import { useSettings } from '../ui/hooks/useSettings';
 import { useKeyboardNav, ViewType, MOD_KEY } from '../ui/hooks/useKeyboardNav';
 import { ErrorBoundary } from '../ui/components/ErrorBoundary';
+import { ToastProvider } from '../ui/components/Toast';
 import { Session } from '@/shared/types';
 
 function AppInner() {
@@ -154,7 +155,9 @@ function AppInner() {
 export function App() {
   return (
     <ErrorBoundary>
-      <AppInner />
+      <ToastProvider>
+        <AppInner />
+      </ToastProvider>
     </ErrorBoundary>
   );
 }

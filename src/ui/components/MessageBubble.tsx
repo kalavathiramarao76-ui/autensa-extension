@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useEffect, useCallback } from 'react';
 import { Message } from '@/shared/types';
+import { useToast } from './Toast';
 import { marked, Renderer } from 'marked';
 
 /* ── Custom renderer: language badge + copy-button shell ── */
@@ -37,6 +38,7 @@ interface Props {
 export function MessageBubble({ message }: Props) {
   const isUser = message.role === 'user';
   const contentRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   const html = useMemo(() => {
     if (isUser) return null;
@@ -63,10 +65,11 @@ export function MessageBubble({ message }: Props) {
         navigator.clipboard.writeText(decoded).then(() => {
           btn.classList.add('copied');
           setTimeout(() => btn.classList.remove('copied'), 2000);
+          toast({ type: 'success', title: 'Copied to clipboard' });
         });
       });
     });
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     if (!isUser && html) attachCopyHandlers();
