@@ -90,6 +90,7 @@ export interface ToolResult {
 
 // === Settings ===
 export type ApiProvider = 'claude' | 'ollama';
+export type ThemeMode = 'dark' | 'light' | 'system';
 
 export interface Settings {
   provider: ApiProvider;
@@ -99,6 +100,7 @@ export interface Settings {
   maxIterations: number;
   model: string;
   ollamaEndpoint: string;
+  theme: ThemeMode;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -109,4 +111,5 @@ export const DEFAULT_SETTINGS: Settings = {
   maxIterations: 10,
   model: 'gpt-oss:120b',
   ollamaEndpoint: 'https://sai.sharedllm.com/v1',
+  theme: 'system',
 };

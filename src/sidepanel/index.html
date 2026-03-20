@@ -1,10 +1,32 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Autensa</title>
-  <style>body { margin: 0; background: #09090b; min-height: 100vh; }</style>
+  <style>
+    body { margin: 0; min-height: 100vh; }
+    html:not(.theme-resolved) { background: #09090b; color: #fafafa; }
+    html.theme-resolved { background: var(--surface-0); color: var(--text-primary); }
+  </style>
+  <script>
+    (function() {
+      try {
+        var stored = null;
+        if (window.localStorage) {
+          stored = localStorage.getItem('autensa_theme_cache');
+        }
+        var mode = stored || 'system';
+        var isDark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+        }
+        document.documentElement.classList.add('theme-resolved');
+      } catch(e) {
+        document.documentElement.classList.add('dark', 'theme-resolved');
+      }
+    })();
+  </script>
 </head>
 <body>
   <div id="root"></div>

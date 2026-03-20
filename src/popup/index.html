@@ -1,10 +1,35 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Autensa</title>
-  <style>body { margin: 0; background: #09090b; }</style>
+  <style>
+    body { margin: 0; }
+    /* Prevent flash: apply dark by default until JS resolves theme */
+    html:not(.theme-resolved) { background: #09090b; color: #fafafa; }
+    html.theme-resolved { background: var(--surface-0); color: var(--text-primary); }
+  </style>
+  <script>
+    // Synchronous theme application to prevent FOUC
+    (function() {
+      try {
+        var stored = null;
+        // chrome.storage is async, so we use a sync fallback for initial load
+        if (window.localStorage) {
+          stored = localStorage.getItem('autensa_theme_cache');
+        }
+        var mode = stored || 'system';
+        var isDark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+        }
+        document.documentElement.classList.add('theme-resolved');
+      } catch(e) {
+        document.documentElement.classList.add('dark', 'theme-resolved');
+      }
+    })();
+  </script>
 </head>
 <body>
   <div id="root"></div>

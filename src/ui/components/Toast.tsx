@@ -175,7 +175,7 @@ function ToastItem({
         }
       `}
       style={{
-        background: 'rgba(17,17,19,0.85)',
+        background: 'var(--toast-bg)',
         minHeight: 48,
         maxWidth: 340,
         width: '100%',

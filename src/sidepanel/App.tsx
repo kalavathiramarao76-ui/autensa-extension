@@ -3,6 +3,7 @@ import { ChatView, ChatViewHandle } from '../ui/views/ChatView';
 import { SettingsView } from '../ui/views/SettingsView';
 import { HistoryView } from '../ui/views/HistoryView';
 import { useSettings } from '../ui/hooks/useSettings';
+import { useTheme } from '../ui/hooks/useTheme';
 import { useKeyboardNav, ViewType, MOD_KEY } from '../ui/hooks/useKeyboardNav';
 import { ErrorBoundary } from '../ui/components/ErrorBoundary';
 import { ToastProvider } from '../ui/components/Toast';
@@ -12,6 +13,7 @@ function AppInner() {
   const [view, setView] = useState<ViewType>('chat');
   const [sessionToRestore, setSessionToRestore] = useState<Session | null>(null);
   const { isConfigured, loading } = useSettings();
+  useTheme(); // Initialize theme on mount
   const chatRef = useRef<ChatViewHandle>(null);
 
   const handleSelectSession = useCallback((session: Session) => {

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSettings } from '../hooks/useSettings';
-import { ApiProvider } from '@/shared/types';
+import { useTheme } from '../hooks/useTheme';
+import { ApiProvider, ThemeMode } from '@/shared/types';
 import { MOD_KEY } from '../hooks/useKeyboardNav';
 
 interface Props {
@@ -9,6 +10,7 @@ interface Props {
 
 export function SettingsView({ onBack }: Props) {
   const { settings, updateSettings, loading } = useSettings();
+  const { mode: themeMode, setTheme } = useTheme();
   const [saved, setSaved] = useState(false);
   const firstFieldRef = useRef<HTMLInputElement>(null);
 
@@ -77,6 +79,35 @@ export function SettingsView({ onBack }: Props) {
                 }`}
               >
                 {p === 'ollama' ? 'Ollama / Custom' : 'Claude API'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Theme Toggle */}
+        <div>
+          <label className="text-xs font-medium text-text-secondary mb-2 block">Theme</label>
+          <div className="theme-toggle-group">
+            <div
+              className="theme-toggle-slider"
+              style={{
+                left: themeMode === 'light' ? '2px' : themeMode === 'system' ? 'calc(33.333% + 0px)' : 'calc(66.666%)',
+                width: 'calc(33.333% - 2px)',
+              }}
+            />
+            {([
+              { value: 'light' as ThemeMode, label: '\u2600\uFE0F Light' },
+              { value: 'system' as ThemeMode, label: '\uD83D\uDCBB System' },
+              { value: 'dark' as ThemeMode, label: '\uD83C\uDF19 Dark' },
+            ]).map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => setTheme(value)}
+                className={`theme-toggle-btn outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
+                  themeMode === value ? 'theme-toggle-btn-active' : ''
+                }`}
+              >
+                {label}
               </button>
             ))}
           </div>

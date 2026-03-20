@@ -3,6 +3,36 @@
 @tailwind utilities;
 
 @layer base {
+  /* ── Light theme (default) ── */
+  :root {
+    --surface-0: 255 255 255;
+    --surface-1: 249 250 251;
+    --surface-2: 244 244 245;
+    --surface-3: 228 228 231;
+    --surface-4: 212 212 216;
+    --text-primary: 24 24 27;
+    --text-secondary: 82 82 91;
+    --text-tertiary: 113 113 122;
+    --border: 228 228 231;
+    --border-hover: 212 212 216;
+    --toast-bg: rgba(255, 255, 255, 0.92);
+  }
+
+  /* ── Dark theme ── */
+  .dark {
+    --surface-0: 9 9 11;
+    --surface-1: 17 17 19;
+    --surface-2: 24 24 27;
+    --surface-3: 31 31 35;
+    --surface-4: 39 39 42;
+    --text-primary: 250 250 250;
+    --text-secondary: 161 161 170;
+    --text-tertiary: 113 113 122;
+    --border: 39 39 42;
+    --border-hover: 63 63 70;
+    --toast-bg: rgba(17, 17, 19, 0.85);
+  }
+
   * {
     margin: 0;
     padding: 0;
@@ -12,6 +42,23 @@
   body {
     @apply bg-surface-0 text-text-primary font-sans text-base antialiased;
     min-width: 400px;
+    transition: background-color 200ms ease, color 200ms ease;
+  }
+
+  /* Smooth theme transitions on key elements */
+  *,
+  *::before,
+  *::after {
+    transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+    transition-duration: 0ms;
+  }
+
+  /* Only enable transitions when theme switch is happening */
+  .theme-transitioning *,
+  .theme-transitioning *::before,
+  .theme-transitioning *::after {
+    transition-duration: 200ms !important;
+    transition-timing-function: ease !important;
   }
 
   ::-webkit-scrollbar {
@@ -73,7 +120,7 @@
   .card-interactive {
     @apply card cursor-pointer select-none
            hover:bg-surface-2 hover:border-accent/20
-           hover:translate-y-[-1px] hover:shadow-[0_2px_8px_rgba(0,0,0,0.15)]
+           hover:translate-y-[-1px] hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)]
            active:scale-[0.98] active:translate-y-0;
   }
 
@@ -89,8 +136,8 @@
 
   /* ── Skeleton base ── */
   .skeleton-base {
-    @apply bg-gradient-to-r from-surface-2 via-surface-3/60 to-surface-2
-           bg-[length:200%_100%] animate-shimmer;
+    @apply bg-gradient-to-r from-surface-2 via-surface-3 to-surface-2
+           bg-[length:200%_100%] animate-shimmer opacity-80;
   }
 
   /* ── Message animations ── */
@@ -149,6 +196,23 @@
            transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)];
   }
 
+  /* ── Theme toggle (3-way) ── */
+  .theme-toggle-group {
+    @apply relative flex gap-0 bg-surface-3 rounded-lg p-0.5;
+  }
+  .theme-toggle-btn {
+    @apply relative z-10 flex-1 py-2 px-2 rounded-md text-sm font-medium
+           transition-colors duration-200 cursor-pointer select-none
+           text-text-secondary hover:text-text-primary text-center;
+  }
+  .theme-toggle-btn-active {
+    @apply text-white;
+  }
+  .theme-toggle-slider {
+    @apply absolute top-0.5 bottom-0.5 rounded-md bg-accent
+           transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)];
+  }
+
   /* ── Premium thinking indicator ── */
   .thinking-indicator {
     @apply flex items-center gap-3;
@@ -167,14 +231,11 @@
 
   /* ── Code block wrapper ── */
   .code-block-wrapper {
-    @apply relative my-3 rounded-xl border border-border overflow-hidden;
-    background: #18181b; /* surface-2 */
+    @apply relative my-3 rounded-xl border border-border overflow-hidden bg-surface-2;
   }
 
   .code-block-header {
-    @apply flex items-center justify-between px-4 py-2;
-    background: #1f1f23; /* surface-3 */
-    border-bottom: 1px solid #27272a; /* border */
+    @apply flex items-center justify-between px-4 py-2 bg-surface-3 border-b border-border;
   }
 
   .code-lang-badge {

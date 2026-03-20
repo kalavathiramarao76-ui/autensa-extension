@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { useAgent } from '../hooks/useAgent';
 import { useSettings } from '../hooks/useSettings';
+import { useTheme } from '../hooks/useTheme';
 import { MessageBubble } from '../components/MessageBubble';
 import { StreamingText } from '../components/StreamingText';
 import { ToolExecution } from '../components/ToolExecution';
@@ -39,6 +40,7 @@ export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatV
     sendMessage, clearMessages, restoreSession, newSession,
   } = useAgent();
   const { settings, isConfigured } = useSettings();
+  const { mode: themeMode, cycleTheme } = useTheme();
   const health = useHealthCheck(settings, isConfigured);
   const { toast } = useToast();
   const [input, setInput] = useState('');
@@ -186,6 +188,29 @@ export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatV
           <HealthIndicator health={health} />
         </div>
         <div className="flex items-center gap-1">
+          {/* Theme cycle button */}
+          <button
+            onClick={cycleTheme}
+            className="btn-ghost !px-2 !py-1 text-xs group/hint relative"
+            title={`Theme: ${themeMode}`}
+          >
+            {themeMode === 'dark' ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+              </svg>
+            ) : themeMode === 'light' ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+              </svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+              </svg>
+            )}
+            <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-2xs text-text-tertiary opacity-0 group-hover/hint:opacity-100 transition-opacity whitespace-nowrap pointer-events-none capitalize">
+              {themeMode}
+            </span>
+          </button>
           {onOpenHistory && (
             <button
               onClick={onOpenHistory}

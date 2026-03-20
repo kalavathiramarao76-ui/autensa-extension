@@ -7,11 +7,11 @@ export default {
     extend: {
       colors: {
         surface: {
-          0: '#09090b',
-          1: '#111113',
-          2: '#18181b',
-          3: '#1f1f23',
-          4: '#27272a',
+          0: 'rgb(var(--surface-0) / <alpha-value>)',
+          1: 'rgb(var(--surface-1) / <alpha-value>)',
+          2: 'rgb(var(--surface-2) / <alpha-value>)',
+          3: 'rgb(var(--surface-3) / <alpha-value>)',
+          4: 'rgb(var(--surface-4) / <alpha-value>)',
         },
         accent: {
           DEFAULT: '#6366f1',
@@ -20,13 +20,13 @@ export default {
           subtle: '#6366f110',
         },
         text: {
-          primary: '#fafafa',
-          secondary: '#a1a1aa',
-          tertiary: '#71717a',
+          primary: 'rgb(var(--text-primary) / <alpha-value>)',
+          secondary: 'rgb(var(--text-secondary) / <alpha-value>)',
+          tertiary: 'rgb(var(--text-tertiary) / <alpha-value>)',
         },
         border: {
-          DEFAULT: '#27272a',
-          hover: '#3f3f46',
+          DEFAULT: 'rgb(var(--border) / <alpha-value>)',
+          hover: 'rgb(var(--border-hover) / <alpha-value>)',
         },
         success: '#22c55e',
         warning: '#f59e0b',
