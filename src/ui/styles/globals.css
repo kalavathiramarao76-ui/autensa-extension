@@ -338,4 +338,54 @@
   .code-block-pre::-webkit-scrollbar-thumb {
     @apply bg-surface-4 rounded-full;
   }
+
+  /* ── Resize Handle ── */
+  .resize-handle-zone {
+    @apply flex items-center justify-center py-1 cursor-row-resize select-none;
+    touch-action: none;
+  }
+  .resize-handle-zone:hover .resize-handle-pill,
+  .resize-handle-zone:focus-visible .resize-handle-pill {
+    @apply bg-text-tertiary;
+    width: 48px;
+  }
+  .resize-handle-zone[data-dragging="true"] .resize-handle-pill {
+    @apply bg-accent;
+    width: 56px;
+  }
+  .resize-handle-zone:focus-visible {
+    @apply outline-none ring-2 ring-accent/40 rounded;
+  }
+  .resize-handle-pill {
+    @apply rounded-full;
+    width: 40px;
+    height: 3px;
+    background: rgb(var(--border));
+    transition: background-color 150ms ease, width 150ms ease;
+  }
+
+  /* ── Collapsible Header ── */
+  .header-section {
+    transition: max-height 200ms ease;
+  }
+  .header-collapsed .header-content-fade {
+    opacity: 0;
+    transition: opacity 100ms ease;
+  }
+
+  /* ── Compact Mode ── */
+  .compact-mode .msg-user,
+  .compact-mode .msg-assistant {
+    @apply text-xs;
+  }
+  .compact-mode .card {
+    @apply !p-3;
+  }
+  .compact-mode .tool-card {
+    @apply !p-2;
+  }
+  .compact-mode .code-block-pre code {
+    font-size: 0.75rem;
+    line-height: 1.5;
+  }
 }

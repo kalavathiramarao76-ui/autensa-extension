@@ -7,6 +7,7 @@ interface Props {
   placeholder?: string;
   disabled?: boolean;
   autoFocus?: boolean;
+  maxHeight?: number;
 }
 
 export interface InputHandle {
@@ -16,7 +17,7 @@ export interface InputHandle {
 }
 
 export const Input = forwardRef<InputHandle, Props>(function Input(
-  { value, onChange, onSubmit, placeholder = 'Message Autensa...', disabled, autoFocus },
+  { value, onChange, onSubmit, placeholder = 'Message Autensa...', disabled, autoFocus, maxHeight },
   fwdRef,
 ) {
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -30,9 +31,10 @@ export const Input = forwardRef<InputHandle, Props>(function Input(
   useEffect(() => {
     if (ref.current) {
       ref.current.style.height = 'auto';
-      ref.current.style.height = Math.min(ref.current.scrollHeight, 120) + 'px';
+      const limit = maxHeight && maxHeight > 44 ? maxHeight : 120;
+      ref.current.style.height = Math.min(ref.current.scrollHeight, limit) + 'px';
     }
-  }, [value]);
+  }, [value, maxHeight]);
 
   useEffect(() => {
     if (autoFocus && ref.current) ref.current.focus();

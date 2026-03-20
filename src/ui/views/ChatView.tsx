@@ -2,12 +2,14 @@ import React, { useState, useRef, useEffect, useMemo, useCallback, forwardRef, u
 import { useAgent } from '../hooks/useAgent';
 import { useSettings } from '../hooks/useSettings';
 import { useTheme } from '../hooks/useTheme';
+import { useCompactMode } from '../hooks/useCompactMode';
 import { MessageBubble } from '../components/MessageBubble';
 import { StreamingText } from '../components/StreamingText';
 import { ToolExecution } from '../components/ToolExecution';
 import { Input, InputHandle } from '../components/Input';
 import { ConnectionStatus } from '../components/ConnectionStatus';
 import { HealthIndicator } from '../components/HealthIndicator';
+import { ResizeHandle } from '../components/ResizeHandle';
 import { useHealthCheck } from '../hooks/useHealthCheck';
 import { useToast } from '../components/Toast';
 import { QUICK_ACTIONS } from '@/shared/constants';
@@ -15,6 +17,33 @@ import { Session, ToolCallDisplay } from '@/shared/types';
 import { estimateTokens, formatTokenCount } from '@/shared/tokenizer';
 import { exportSessionToMarkdown, downloadMarkdown, copyToClipboard, exportFilename } from '@/shared/export';
 import { gridNav, MOD_KEY } from '../hooks/useKeyboardNav';
+
+const MIN_INPUT_HEIGHT = 44;
+const DEFAULT_INPUT_HEIGHT = 80;
+const INPUT_HEIGHT_STORAGE_KEY = 'autensa_input_height';
+const HEADER_COLLAPSED_KEY = 'autensa_header_collapsed';
+
+function getStoredInputHeight(): number {
+  try {
+    const v = localStorage.getItem(INPUT_HEIGHT_STORAGE_KEY);
+    if (v) {
+      const n = parseInt(v, 10);
+      if (n >= MIN_INPUT_HEIGHT) return n;
+    }
+  } catch { /* ignore */ }
+  return DEFAULT_INPUT_HEIGHT;
+}
+
+function getStoredHeaderCollapsed(): boolean {
+  try {
+    return localStorage.getItem(HEADER_COLLAPSED_KEY) === 'true';
+  } catch { return false; }
+}
+
+function isSidepanelContext(): boolean {
+  // Popup is fixed at 500px height; sidepanel is taller
+  return window.innerHeight > 520;
+}
 
 interface ChatViewProps {
   onOpenHistory?: () => void;
@@ -42,6 +71,7 @@ export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatV
   } = useAgent();
   const { settings, isConfigured } = useSettings();
   const { mode: themeMode, cycleTheme } = useTheme();
+  const { compact, toggleCompact } = useCompactMode();
   const health = useHealthCheck(settings, isConfigured);
   const { toast } = useToast();
   const [input, setInput] = useState('');
@@ -50,6 +80,44 @@ export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatV
   const prevToolsRef = useRef<ToolCallDisplay[]>([]);
   const userScrolledUpRef = useRef(false);
   const scrollRafRef = useRef<number | null>(null);
+
+  // Resize state
+  const [inputAreaHeight, setInputAreaHeight] = useState(getStoredInputHeight);
+  const [headerCollapsed, setHeaderCollapsed] = useState(getStoredHeaderCollapsed);
+  const [isSidepanel, setIsSidepanel] = useState(isSidepanelContext);
+
+  // Detect context on resize
+  useEffect(() => {
+    const check = () => setIsSidepanel(isSidepanelContext());
+    window.addEventListener('resize', check, { passive: true });
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  // Max input height: 60% of panel
+  const maxInputHeight = useMemo(() => Math.floor(window.innerHeight * 0.6), []);
+
+  // Persist input area height
+  const handleResize = useCallback((delta: number) => {
+    setInputAreaHeight(prev => {
+      const next = Math.max(MIN_INPUT_HEIGHT, Math.min(maxInputHeight, prev + delta));
+      try { localStorage.setItem(INPUT_HEIGHT_STORAGE_KEY, String(next)); } catch { /* ignore */ }
+      return next;
+    });
+  }, [maxInputHeight]);
+
+  const handleResetHeight = useCallback(() => {
+    setInputAreaHeight(DEFAULT_INPUT_HEIGHT);
+    try { localStorage.setItem(INPUT_HEIGHT_STORAGE_KEY, String(DEFAULT_INPUT_HEIGHT)); } catch { /* ignore */ }
+  }, []);
+
+  // Header collapse
+  const toggleHeaderCollapse = useCallback(() => {
+    setHeaderCollapsed(prev => {
+      const next = !prev;
+      try { localStorage.setItem(HEADER_COLLAPSED_KEY, String(next)); } catch { /* ignore */ }
+      return next;
+    });
+  }, []);
 
   // Quick actions grid keyboard state
   const [qaIndex, setQaIndex] = useState(-1);
@@ -206,95 +274,153 @@ export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatV
     return () => document.removeEventListener('keydown', handler);
   }, [isEmpty, qaIndex, qaItems]);
 
+  // Compact mode class modifiers
+  const cPad = compact ? 'px-3' : 'px-5';
+  const cPadY = compact ? 'py-2' : 'py-3';
+  const cGap = compact ? 'space-y-2' : 'space-y-4';
+  const cText = compact ? 'text-xs' : 'text-sm';
+
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-border">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-accent/20 flex items-center justify-center">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-            </svg>
-          </div>
-          <span className="text-sm font-semibold text-text-primary tracking-tight">Autensa</span>
-          <HealthIndicator health={health} />
-        </div>
-        <div className="flex items-center gap-1">
-          {/* Theme cycle button */}
-          <button
-            onClick={cycleTheme}
-            className="btn-ghost !px-2 !py-1 text-xs group/hint relative"
-            title={`Theme: ${themeMode}`}
-          >
-            {themeMode === 'dark' ? (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+    <div className={`flex flex-col h-full${compact ? ' compact-mode' : ''}`}>
+      {/* Header — collapsible in sidepanel */}
+      <div
+        className={`header-section border-b border-border transition-all duration-200 ease-out overflow-hidden ${
+          headerCollapsed && isSidepanel ? 'header-collapsed' : ''
+        }`}
+        style={{
+          maxHeight: headerCollapsed && isSidepanel ? '32px' : '200px',
+        }}
+      >
+        <div className={`flex items-center justify-between ${cPad} ${cPadY}`}>
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-accent/20 flex items-center justify-center flex-shrink-0">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
               </svg>
-            ) : themeMode === 'light' ? (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-              </svg>
+            </div>
+            {headerCollapsed && isSidepanel ? (
+              <HealthIndicator health={health} />
             ) : (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
-              </svg>
+              <>
+                <span className={`${cText} font-semibold text-text-primary tracking-tight`}>Autensa</span>
+                <HealthIndicator health={health} />
+              </>
             )}
-            <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-2xs text-text-tertiary opacity-0 group-hover/hint:opacity-100 transition-opacity whitespace-nowrap pointer-events-none capitalize">
-              {themeMode}
-            </span>
-          </button>
-          {onOpenHistory && (
+          </div>
+          <div className="flex items-center gap-1">
+            {/* Collapse/expand button — sidepanel only */}
+            {isSidepanel && (
+              <button
+                onClick={toggleHeaderCollapse}
+                className="btn-ghost !px-2 !py-1 text-xs"
+                title={headerCollapsed ? 'Expand header' : 'Collapse header'}
+              >
+                <svg
+                  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round"
+                  style={{ transform: headerCollapsed ? 'rotate(180deg)' : 'none', transition: 'transform 200ms ease' }}
+                >
+                  <polyline points="18 15 12 9 6 15"/>
+                </svg>
+              </button>
+            )}
+            {/* Compact mode toggle */}
             <button
-              onClick={onOpenHistory}
-              className="btn-ghost !px-2 !py-1 text-xs group/hint relative"
-              title="History"
+              onClick={toggleCompact}
+              className={`btn-ghost !px-2 !py-1 text-xs group/hint relative ${compact ? 'text-accent' : ''}`}
+              title={compact ? 'Standard mode' : 'Compact mode'}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"/>
-                <polyline points="12 6 12 12 16 14"/>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <line x1="3" y1="18" x2="21" y2="18"/>
               </svg>
               <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-2xs text-text-tertiary opacity-0 group-hover/hint:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                {MOD_KEY}H
+                {compact ? 'Standard' : 'Compact'}
               </span>
             </button>
-          )}
-          {messages.length > 0 && (
-            <button
-              onClick={(e) => handleExport(e.shiftKey)}
-              className="btn-ghost !px-2 !py-1 text-xs group/hint relative"
-              title="Export conversation (Shift+click to copy)"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-2xs text-text-tertiary opacity-0 group-hover/hint:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                {MOD_KEY}E
-              </span>
-            </button>
-          )}
-          {messages.length > 0 && (
-            <button
-              onClick={handleNewChat}
-              className="btn-ghost !px-2 !py-1 text-xs group/hint relative"
-              title="New chat"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 5v14M5 12h14"/>
-              </svg>
-              <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-2xs text-text-tertiary opacity-0 group-hover/hint:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                {MOD_KEY}N
-              </span>
-            </button>
-          )}
+            {/* These buttons only show when header is expanded */}
+            {!(headerCollapsed && isSidepanel) && (
+              <>
+                {/* Theme cycle button */}
+                <button
+                  onClick={cycleTheme}
+                  className="btn-ghost !px-2 !py-1 text-xs group/hint relative"
+                  title={`Theme: ${themeMode}`}
+                >
+                  {themeMode === 'dark' ? (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+                    </svg>
+                  ) : themeMode === 'light' ? (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                    </svg>
+                  ) : (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+                    </svg>
+                  )}
+                  <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-2xs text-text-tertiary opacity-0 group-hover/hint:opacity-100 transition-opacity whitespace-nowrap pointer-events-none capitalize">
+                    {themeMode}
+                  </span>
+                </button>
+                {onOpenHistory && (
+                  <button
+                    onClick={onOpenHistory}
+                    className="btn-ghost !px-2 !py-1 text-xs group/hint relative"
+                    title="History"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10"/>
+                      <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-2xs text-text-tertiary opacity-0 group-hover/hint:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                      {MOD_KEY}H
+                    </span>
+                  </button>
+                )}
+                {messages.length > 0 && (
+                  <button
+                    onClick={(e) => handleExport(e.shiftKey)}
+                    className="btn-ghost !px-2 !py-1 text-xs group/hint relative"
+                    title="Export conversation (Shift+click to copy)"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                      <polyline points="7 10 12 15 17 10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-2xs text-text-tertiary opacity-0 group-hover/hint:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                      {MOD_KEY}E
+                    </span>
+                  </button>
+                )}
+                {messages.length > 0 && (
+                  <button
+                    onClick={handleNewChat}
+                    className="btn-ghost !px-2 !py-1 text-xs group/hint relative"
+                    title="New chat"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                    <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-2xs text-text-tertiary opacity-0 group-hover/hint:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                      {MOD_KEY}N
+                    </span>
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
 
       <ConnectionStatus />
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+      <div ref={scrollRef} className={`flex-1 overflow-y-auto ${cPad} ${compact ? 'py-2' : 'py-4'} ${cGap}`}>
         {isEmpty && (
           <div className="flex flex-col items-center justify-center h-full animate-fade-in">
             <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center mb-4">
@@ -302,21 +428,21 @@ export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatV
                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
               </svg>
             </div>
-            <p className="text-text-secondary text-sm mb-1">What can I do for you?</p>
+            <p className={`text-text-secondary ${cText} mb-1`}>What can I do for you?</p>
             <p className="text-text-tertiary text-2xs mb-6">
               Press <kbd className="px-1 py-0.5 rounded bg-surface-3 text-text-tertiary font-mono text-2xs">/</kbd> to start typing
             </p>
-            <div className="grid grid-cols-2 gap-2 w-full max-w-xs">
+            <div className={`grid grid-cols-2 ${compact ? 'gap-1.5' : 'gap-2'} w-full max-w-xs`}>
               {qaItems.map((action, idx) => (
                 <button
                   key={action.id}
                   onClick={() => handleQuickAction(action.prompt)}
-                  className={`card-interactive !p-3 text-left group outline-none
+                  className={`card-interactive ${compact ? '!p-2' : '!p-3'} text-left group outline-none
                     ${qaIndex === idx ? 'ring-2 ring-accent/50 border-accent/30 bg-surface-2' : ''}
                   `}
                 >
-                  <span className="text-lg mb-1 block">{action.icon}</span>
-                  <span className="text-xs text-text-secondary group-hover:text-text-primary transition-colors">
+                  <span className={`${compact ? 'text-base' : 'text-lg'} mb-1 block`}>{action.icon}</span>
+                  <span className={`${compact ? 'text-2xs' : 'text-xs'} text-text-secondary group-hover:text-text-primary transition-colors`}>
                     {action.label}
                   </span>
                 </button>
@@ -350,7 +476,7 @@ export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatV
 
       {/* Session Stats Bar — only when messages exist */}
       {messages.length > 0 && (
-        <div className="flex items-center justify-between px-5 py-1.5 border-t border-border text-2xs text-text-tertiary font-mono select-none">
+        <div className={`flex items-center justify-between ${cPad} py-1.5 border-t border-border text-2xs text-text-tertiary font-mono select-none`}>
           <span>{messages.length} msg{messages.length !== 1 ? 's' : ''}</span>
           <span>{formatTokenCount(sessionUsage.totalTokens)} tokens{sessionUsage.estimated ? '' : ' (actual)'}</span>
           <span className="truncate max-w-[120px]">{settings.model}</span>
@@ -359,7 +485,7 @@ export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatV
 
       {/* Port disconnect — resend prompt */}
       {portStatus.failedMessage && (
-        <div className="mx-4 mb-1 px-3 py-2 rounded-lg border border-warning/20 bg-warning/10 flex items-center gap-2 animate-slide-down">
+        <div className={`${compact ? 'mx-3' : 'mx-4'} mb-1 px-3 py-2 rounded-lg border border-warning/20 bg-warning/10 flex items-center gap-2 animate-slide-down`}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-warning flex-shrink-0">
             <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
             <line x1="12" y1="9" x2="12" y2="13" />
@@ -383,8 +509,16 @@ export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatV
         </div>
       )}
 
+      {/* Resize Handle — sidepanel only */}
+      {isSidepanel && (
+        <ResizeHandle onResize={handleResize} onDoubleClick={handleResetHeight} />
+      )}
+
       {/* Input area */}
-      <div className="px-4 pb-4 pt-2 border-t border-border">
+      <div
+        className={`${compact ? 'px-3 pb-3 pt-1' : 'px-4 pb-4 pt-2'} border-t border-border`}
+        style={isSidepanel ? { minHeight: `${inputAreaHeight}px`, transition: 'min-height 100ms ease' } : undefined}
+      >
         {/* Rate limit indicator */}
         {rateLimit.limited && (
           <div className="flex items-center gap-2 mb-2 px-3 py-1.5 rounded-lg bg-error/10 text-error text-2xs font-mono animate-fade-in">
@@ -411,6 +545,7 @@ export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatV
           onSubmit={handleSubmit}
           disabled={isStreaming || rateLimit.limited}
           autoFocus
+          maxHeight={isSidepanel ? inputAreaHeight - 30 : undefined}
         />
 
         {/* Token counter below input */}
