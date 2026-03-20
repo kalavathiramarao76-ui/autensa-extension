@@ -6,6 +6,8 @@ import { StreamingText } from '../components/StreamingText';
 import { ToolExecution } from '../components/ToolExecution';
 import { Input, InputHandle } from '../components/Input';
 import { ConnectionStatus } from '../components/ConnectionStatus';
+import { HealthIndicator } from '../components/HealthIndicator';
+import { useHealthCheck } from '../hooks/useHealthCheck';
 import { useToast } from '../components/Toast';
 import { QUICK_ACTIONS } from '@/shared/constants';
 import { Session, ToolCallDisplay } from '@/shared/types';
@@ -36,7 +38,8 @@ export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatV
     sessionUsage, rateLimit,
     sendMessage, clearMessages, restoreSession, newSession,
   } = useAgent();
-  const { settings } = useSettings();
+  const { settings, isConfigured } = useSettings();
+  const health = useHealthCheck(settings, isConfigured);
   const { toast } = useToast();
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -180,6 +183,7 @@ export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatV
             </svg>
           </div>
           <span className="text-sm font-semibold text-text-primary tracking-tight">Autensa</span>
+          <HealthIndicator health={health} />
         </div>
         <div className="flex items-center gap-1">
           {onOpenHistory && (
