@@ -37,6 +37,11 @@ renderer.link = function ({ href, text }: { href: string; text: string }) {
   return `<a href="${href}" target="_blank" rel="noopener noreferrer">${escaped}</a>`;
 };
 
+/* ── Wrap tables in scrollable container ── */
+renderer.table = function ({ header, body }: { header: string; body: string }) {
+  return `<div class="table-scroll-wrapper"><table><thead>${header}</thead><tbody>${body}</tbody></table></div>`;
+};
+
 marked.setOptions({ breaks: true, gfm: true, renderer });
 
 /* ── Component ── */

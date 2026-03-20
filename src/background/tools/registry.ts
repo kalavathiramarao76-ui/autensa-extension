@@ -59,37 +59,45 @@ function formatToolResult(toolName: string, data: any): string {
   switch (toolName) {
     case 'github_list_issues': {
       if (!Array.isArray(data) || data.length === 0) return 'No issues found.';
-      const rows = data.map((i: any) => [
-        `${stateEmoji(i.state)} #${i.number}`,
-        truncate(i.title, 48),
-        i.state || '—',
-        (i.labels && i.labels.length > 0) ? i.labels.slice(0, 3).map((l: string) => `\`${l}\``).join(' ') : '—',
-        relativeDate(i.created),
-      ]);
-      return mdTable(['#', 'Title', 'State', 'Labels', 'Created'], rows);
+      // Check if any issue has labels
+      const hasLabels = data.some((i: any) => i.labels && i.labels.length > 0);
+      const headers = hasLabels ? ['Issue', 'Title', 'Labels', 'Age'] : ['Issue', 'Title', 'Age'];
+      const rows = data.map((i: any) => {
+        const base = [
+          `${stateEmoji(i.state)} #${i.number}`,
+          truncate(i.title, 40),
+        ];
+        if (hasLabels) {
+          base.push(
+            (i.labels && i.labels.length > 0) ? i.labels.slice(0, 2).map((l: string) => `\`${l}\``).join(' ') : '—'
+          );
+        }
+        base.push(relativeDate(i.created));
+        return base;
+      });
+      return mdTable(headers, rows);
     }
 
     case 'github_list_repos': {
       if (!Array.isArray(data) || data.length === 0) return 'No repositories found.';
       const rows = data.map((r: any) => [
-        `[${truncate(r.name, 40)}](${r.url || '#'})`,
+        `[${truncate(r.name, 30)}](${r.url || '#'})`,
         r.language || '—',
-        r.stars != null ? String(r.stars) : '0',
+        r.stars != null ? `⭐${r.stars}` : '0',
         relativeDate(r.updated),
       ]);
-      return mdTable(['Repo', 'Language', 'Stars', 'Updated'], rows);
+      return mdTable(['Repo', 'Lang', 'Stars', 'Updated'], rows);
     }
 
     case 'github_list_pull_requests': {
       if (!Array.isArray(data) || data.length === 0) return 'No pull requests found.';
       const rows = data.map((pr: any) => [
         `${stateEmoji(pr.state)} #${pr.number}`,
-        truncate(pr.title, 44),
+        truncate(pr.title, 36) + (pr.draft ? ' `draft`' : ''),
         pr.author || '—',
-        pr.draft ? 'Draft' : '—',
         relativeDate(pr.created),
       ]);
-      return mdTable(['#', 'Title', 'Author', 'Draft', 'Created'], rows);
+      return mdTable(['PR', 'Title', 'Author', 'Age'], rows);
     }
 
     case 'github_search_code': {
@@ -126,13 +134,12 @@ function formatToolResult(toolName: string, data: any): string {
     case 'vercel_list_deployments': {
       if (!Array.isArray(data) || data.length === 0) return 'No deployments found.';
       const rows = data.map((d: any) => [
-        truncate(d.name, 28),
+        truncate(d.name, 22),
         `${stateEmoji(d.state)} ${d.state || '—'}`,
-        d.target || '—',
-        d.url ? `[Link](${d.url})` : '—',
+        d.url ? `[${d.target || 'View'}](${d.url})` : (d.target || '—'),
         relativeDate(d.created),
       ]);
-      return mdTable(['Name', 'State', 'Target', 'URL', 'Created'], rows);
+      return mdTable(['Name', 'Status', 'Link', 'Age'], rows);
     }
 
     case 'vercel_get_deployment': {

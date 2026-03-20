@@ -14,6 +14,11 @@ function createStreamingRenderer(isComplete: boolean) {
     return `<a href="${href}" target="_blank" rel="noopener noreferrer">${escaped}</a>`;
   };
 
+  /* Wrap tables in scrollable container */
+  renderer.table = function ({ header, body }: { header: string; body: string }) {
+    return `<div class="table-scroll-wrapper"><table><thead>${header}</thead><tbody>${body}</tbody></table></div>`;
+  };
+
   renderer.code = function ({ text, lang }: { text: string; lang?: string }) {
     const escaped = text
       .replace(/&/g, '&amp;')

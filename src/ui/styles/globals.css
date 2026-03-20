@@ -389,89 +389,118 @@
     line-height: 1.5;
   }
 
+  /* ── Table scroll wrapper ── */
+  .table-scroll-wrapper {
+    @apply my-3 rounded-xl border border-border overflow-hidden;
+    position: relative;
+  }
+
+  .table-scroll-wrapper table {
+    @apply w-full border-collapse;
+    min-width: 100%;
+  }
+
   /* ── Premium Markdown Tables (Notion/Linear style) ── */
   .prose table {
-    @apply w-full border-collapse text-sm my-3;
-    border-radius: 12px;
-    overflow: hidden;
+    @apply w-full border-collapse text-sm my-3 rounded-xl overflow-hidden;
     border: 1px solid rgb(var(--border));
-    display: block;
-    overflow-x: auto;
-    min-width: 320px;
-    -webkit-overflow-scrolling: touch;
   }
 
-  /* Horizontal scrollbar for tables */
-  .prose table::-webkit-scrollbar {
-    height: 4px;
-  }
-  .prose table::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .prose table::-webkit-scrollbar-thumb {
-    @apply bg-surface-4 rounded-full;
-  }
-
-  .prose thead {
+  .prose thead,
+  .table-scroll-wrapper thead {
     @apply bg-surface-3;
   }
 
-  .prose thead th {
+  .prose thead th,
+  .table-scroll-wrapper thead th {
     @apply text-text-tertiary font-semibold text-left tracking-wider;
     font-size: 0.625rem;
     text-transform: uppercase;
-    padding: 8px 12px;
+    padding: 6px 10px;
     border-bottom: 1px solid rgb(var(--border));
     white-space: nowrap;
   }
 
-  .prose tbody tr {
+  .prose tbody tr,
+  .table-scroll-wrapper tbody tr {
     @apply transition-colors duration-100;
-    border-bottom: 1px solid rgb(var(--border) / 0.5);
+    border-bottom: 1px solid rgb(var(--border) / 0.3);
   }
 
-  .prose tbody tr:nth-child(odd) {
+  .prose tbody tr:nth-child(odd),
+  .table-scroll-wrapper tbody tr:nth-child(odd) {
     @apply bg-surface-1;
   }
 
-  .prose tbody tr:nth-child(even) {
-    @apply bg-surface-2;
+  .prose tbody tr:nth-child(even),
+  .table-scroll-wrapper tbody tr:nth-child(even) {
+    background: rgb(var(--surface-0));
   }
 
-  .prose tbody tr:hover {
+  .prose tbody tr:hover,
+  .table-scroll-wrapper tbody tr:hover {
     @apply bg-accent/5;
   }
 
-  .prose tbody tr:last-child {
+  .prose tbody tr:last-child,
+  .table-scroll-wrapper tbody tr:last-child {
     border-bottom: none;
   }
 
-  .prose tbody td {
+  .prose tbody td,
+  .table-scroll-wrapper tbody td {
     @apply text-text-secondary;
-    padding: 7px 12px;
+    padding: 6px 10px;
     font-size: 0.8125rem;
-    white-space: nowrap;
-    max-width: 280px;
+    max-width: 200px;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  /* Links inside table cells must be visible */
+  /* Title column — allow wrapping */
+  .prose tbody td:nth-child(2),
+  .table-scroll-wrapper tbody td:nth-child(2) {
+    @apply text-text-primary;
+    white-space: normal;
+    word-break: break-word;
+    min-width: 120px;
+  }
+
+  /* First column (issue #) — no wrap, medium weight */
+  .prose tbody td:first-child,
+  .table-scroll-wrapper tbody td:first-child {
+    @apply text-text-primary font-medium;
+    white-space: nowrap;
+  }
+
+  /* Last column (age/date) — no wrap */
+  .prose tbody td:last-child,
+  .table-scroll-wrapper tbody td:last-child {
+    white-space: nowrap;
+    @apply text-text-tertiary;
+    font-size: 0.75rem;
+  }
+
+  /* Links inside table cells */
   .prose tbody td a,
-  .prose thead th a {
+  .prose thead th a,
+  .table-scroll-wrapper td a {
     color: #6366f1 !important;
     text-decoration: none;
     cursor: pointer;
   }
   .prose tbody td a:hover,
-  .prose thead th a:hover {
+  .prose thead th a:hover,
+  .table-scroll-wrapper td a:hover {
     color: #818cf8 !important;
     text-decoration: underline;
   }
 
-  /* Right-align numeric cells (stars, issue numbers that are pure digits) */
-  .prose tbody td:first-child {
-    @apply text-text-primary font-medium;
+  /* Inline code badges in table cells (labels) */
+  .prose tbody td code,
+  .table-scroll-wrapper td code {
+    @apply bg-accent/10 text-accent px-1.5 py-0.5 rounded text-2xs font-medium;
+    font-family: inherit;
   }
 
   /* ── List Styling ── */
@@ -576,46 +605,31 @@
     text-decoration: underline;
   }
 
-  /* ── Table scroll wrapper with hint ── */
-  .table-scroll-wrapper {
-    position: relative;
-    overflow: hidden;
-  }
-  .table-scroll-wrapper::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: 24px;
-    background: linear-gradient(to right, transparent, rgb(var(--surface-1) / 0.8));
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 200ms ease;
-  }
-  .table-scroll-wrapper.has-overflow::after {
-    opacity: 1;
-  }
-  .table-scroll-wrapper.scrolled-end::after {
-    opacity: 0;
-  }
 }
 
 /* ── Narrow panel responsive overrides (side panel ~300-400px) ── */
 @media (max-width: 500px) {
-  .prose table {
+  .prose table,
+  .table-scroll-wrapper table {
     font-size: 0.75rem;
   }
 
-  .prose thead th {
-    padding: 6px 8px;
+  .prose thead th,
+  .table-scroll-wrapper thead th {
+    padding: 5px 6px;
     font-size: 0.5625rem;
   }
 
-  .prose tbody td {
-    padding: 5px 8px;
+  .prose tbody td,
+  .table-scroll-wrapper tbody td {
+    padding: 5px 6px;
     font-size: 0.6875rem;
-    max-width: 180px;
+    max-width: 140px;
+  }
+
+  .prose tbody td:nth-child(2),
+  .table-scroll-wrapper tbody td:nth-child(2) {
+    min-width: 90px;
   }
 
   /* Tighter side padding */
