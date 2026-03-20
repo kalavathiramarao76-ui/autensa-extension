@@ -72,4 +72,93 @@
     @apply bg-gradient-to-r from-surface-2 via-surface-3 to-surface-2
            bg-[length:200%_100%] animate-shimmer rounded;
   }
+
+  /* ── Code block wrapper ── */
+  .code-block-wrapper {
+    @apply relative my-3 rounded-xl border border-border overflow-hidden;
+    background: #18181b; /* surface-2 */
+  }
+
+  .code-block-header {
+    @apply flex items-center justify-between px-4 py-2;
+    background: #1f1f23; /* surface-3 */
+    border-bottom: 1px solid #27272a; /* border */
+  }
+
+  .code-lang-badge {
+    @apply text-text-tertiary font-mono font-semibold tracking-wider select-none;
+    font-size: 0.625rem;
+    line-height: 1;
+    letter-spacing: 0.08em;
+  }
+
+  /* ── Copy button ── */
+  .code-copy-btn {
+    @apply inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-text-tertiary
+           transition-all duration-150 cursor-pointer select-none;
+    font-size: 0.6875rem;
+    background: transparent;
+    border: none;
+    margin-left: auto;
+  }
+  .code-copy-btn:hover {
+    @apply bg-surface-4 text-text-secondary;
+  }
+  .code-copy-btn:active {
+    transform: scale(0.93);
+  }
+
+  .code-copy-btn .copy-icon { display: block; }
+  .code-copy-btn .check-icon { display: none; }
+  .code-copy-btn .copy-label::after { content: 'Copy'; }
+
+  .code-copy-btn.copied {
+    @apply text-success;
+  }
+  .code-copy-btn.copied .copy-icon { display: none; }
+  .code-copy-btn.copied .check-icon {
+    display: block;
+    animation: checkPop 200ms ease-out;
+  }
+  .code-copy-btn.copied .copy-label::after { content: 'Copied!'; }
+
+  /* Override label text via pseudo-element */
+  .code-copy-btn .copy-label {
+    font-size: 0;
+  }
+  .code-copy-btn .copy-label::after {
+    font-size: 0.6875rem;
+  }
+
+  @keyframes checkPop {
+    0% { transform: scale(0.5); opacity: 0; }
+    60% { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* ── Code block body ── */
+  .code-block-pre {
+    @apply m-0 p-4 overflow-x-auto;
+    background: transparent !important;
+    border: none !important;
+  }
+
+  .code-block-pre code {
+    @apply font-mono text-text-primary;
+    font-size: 0.8125rem;
+    line-height: 1.7;
+    tab-size: 2;
+    white-space: pre;
+  }
+
+  /* Horizontal scrollbar within code blocks */
+  .code-block-pre::-webkit-scrollbar {
+    height: 4px;
+  }
+  .code-block-pre::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .code-block-pre::-webkit-scrollbar-thumb {
+    @apply bg-surface-4 rounded-full;
+  }
 }
