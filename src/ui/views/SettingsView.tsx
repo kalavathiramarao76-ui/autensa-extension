@@ -1,8 +1,14 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useSettings } from '../hooks/useSettings';
 import { useTheme } from '../hooks/useTheme';
 import { ApiProvider, ThemeMode } from '@/shared/types';
 import { MOD_KEY } from '../hooks/useKeyboardNav';
+
+interface CacheStats {
+  size: number;
+  hits: number;
+  misses: number;
+}
 
 interface Props {
   onBack: () => void;
@@ -13,6 +19,28 @@ export function SettingsView({ onBack }: Props) {
   const { mode: themeMode, setTheme } = useTheme();
   const [saved, setSaved] = useState(false);
   const firstFieldRef = useRef<HTMLInputElement>(null);
+  const [cacheStats, setCacheStats] = useState<CacheStats>({ size: 0, hits: 0, misses: 0 });
+
+  // Fetch cache stats
+  const refreshCacheStats = useCallback(() => {
+    chrome.runtime.sendMessage({ type: 'CACHE_GET_STATS' }, (stats) => {
+      if (stats && typeof stats.size === 'number') {
+        setCacheStats(stats);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    refreshCacheStats();
+  }, [refreshCacheStats]);
+
+  const handleClearCache = () => {
+    chrome.runtime.sendMessage({ type: 'CACHE_CLEAR' }, () => {
+      refreshCacheStats();
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1500);
+    });
+  };
 
   // Auto-focus first field on mount
   useEffect(() => {
@@ -188,6 +216,25 @@ export function SettingsView({ onBack }: Props) {
           <p className="text-2xs text-text-tertiary">
             Keys are stored locally on your device. Ollama endpoint requires no API key.
           </p>
+        </div>
+
+        {/* Cache Section */}
+        <div className="pt-3 border-t border-border">
+          <label className="text-xs font-medium text-text-secondary mb-2 block">Cache</label>
+          <div className="flex items-center gap-4 text-2xs text-text-tertiary font-mono">
+            <span>{cacheStats.size} entries</span>
+            <span>
+              {cacheStats.hits + cacheStats.misses > 0
+                ? `${Math.round((cacheStats.hits / (cacheStats.hits + cacheStats.misses)) * 100)}% hit rate`
+                : '0% hit rate'}
+            </span>
+          </div>
+          <button
+            onClick={handleClearCache}
+            className="mt-2 text-2xs px-3 py-1.5 rounded-md bg-surface-3 text-text-tertiary hover:text-text-secondary transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+          >
+            Clear Cache
+          </button>
         </div>
       </div>
     </div>

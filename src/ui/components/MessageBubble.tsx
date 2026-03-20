@@ -99,6 +99,12 @@ export function MessageBubble({ message }: Props) {
         )}
       </div>
 
+      {!isUser && message.cached && (
+        <div className="mt-1">
+          <span className="text-2xs text-text-tertiary select-none">{'\u26A1'} cached</span>
+        </div>
+      )}
+
       {message.toolCalls && message.toolCalls.length > 0 && (
         <div className="mt-2 space-y-1.5">
           {message.toolCalls.map(tc => (

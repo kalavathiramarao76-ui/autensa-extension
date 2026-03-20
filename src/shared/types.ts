@@ -12,7 +12,7 @@ export type MessageType =
   | { type: 'AGENT_STREAM_CHUNK'; payload: { text: string; id: string } }
   | { type: 'AGENT_TOOL_START'; payload: { toolName: string; args: unknown; id: string } }
   | { type: 'AGENT_TOOL_RESULT'; payload: { toolName: string; result: string; id: string; success: boolean } }
-  | { type: 'AGENT_COMPLETE'; payload: { finalText: string; id: string } }
+  | { type: 'AGENT_COMPLETE'; payload: { finalText: string; id: string; cached?: boolean } }
   | { type: 'AGENT_USAGE'; payload: { usage: UsageData; id: string } }
   | { type: 'AGENT_ERROR'; payload: { error: string; id: string; retryAfter?: number } }
   | { type: 'AGENT_RATE_LIMIT'; payload: { requestsPerMinute: number; retryAfter?: number } }
@@ -20,7 +20,9 @@ export type MessageType =
   | { type: 'PAGE_CONTEXT_RESULT'; payload: PageContext }
   | { type: 'OPEN_SIDE_PANEL' }
   | { type: 'OPEN_COMMAND_PALETTE' }
-  | { type: 'QUICK_ACTION'; payload: { action: string; data?: unknown } };
+  | { type: 'QUICK_ACTION'; payload: { action: string; data?: unknown } }
+  | { type: 'CACHE_GET_STATS' }
+  | { type: 'CACHE_CLEAR' };
 
 // === Page Context ===
 export interface PageContext {
@@ -40,6 +42,7 @@ export interface Message {
   timestamp: number;
   toolCalls?: ToolCallDisplay[];
   usage?: UsageData;
+  cached?: boolean;
 }
 
 export interface ToolCallDisplay {

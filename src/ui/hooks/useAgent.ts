@@ -119,6 +119,7 @@ export function useAgent(): UseAgentReturn {
             content: msg.payload.finalText,
             timestamp: Date.now(),
             toolCalls: undefined,
+            cached: msg.payload.cached || false,
           };
           setMessages(prev => {
             const next = [...prev, assistantMsg];
