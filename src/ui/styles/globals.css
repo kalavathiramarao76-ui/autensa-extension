@@ -289,6 +289,30 @@
     100% { transform: scale(1); opacity: 1; }
   }
 
+  /* ── Streaming text container ── */
+  .streaming-text-container {
+    @apply relative text-text-primary text-base leading-relaxed;
+  }
+
+  .streaming-cursor {
+    @apply inline-block w-[2px] h-[1.1em] bg-accent ml-0.5 align-text-bottom animate-pulse-soft;
+  }
+
+  /* ── In-progress code block streaming indicator ── */
+  .code-streaming-indicator {
+    @apply text-text-tertiary font-mono animate-pulse-soft select-none;
+    font-size: 0.625rem;
+    letter-spacing: 0.06em;
+  }
+
+  /* ── Thinking skeleton (shimmer lines) ── */
+  .thinking-skeleton {
+    @apply flex flex-col gap-2.5 py-1;
+  }
+  .thinking-skeleton-line {
+    @apply h-3 rounded-md skeleton-base;
+  }
+
   /* ── Code block body ── */
   .code-block-pre {
     @apply m-0 p-4 overflow-x-auto;

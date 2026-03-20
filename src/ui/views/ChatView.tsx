@@ -47,6 +47,8 @@ export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatV
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<InputHandle>(null);
   const prevToolsRef = useRef<ToolCallDisplay[]>([]);
+  const userScrolledUpRef = useRef(false);
+  const scrollRafRef = useRef<number | null>(null);
 
   // Quick actions grid keyboard state
   const [qaIndex, setQaIndex] = useState(-1);
@@ -79,11 +81,40 @@ export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatV
     }
   }, [sessionToRestore, restoreSession, onSessionRestored, toast]);
 
+  // Scroll anchoring: auto-scroll unless user scrolled up
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    userScrolledUpRef.current = distFromBottom > 50;
+  }, []);
+
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
+
+  useEffect(() => {
+    if (userScrolledUpRef.current) return;
+    if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
+    scrollRafRef.current = requestAnimationFrame(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
+    });
+    return () => {
+      if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
+    };
   }, [messages, streamingText, activeTools]);
+
+  // Reset scroll lock when a new user message is sent
+  useEffect(() => {
+    if (messages.length > 0 && messages[messages.length - 1].role === 'user') {
+      userScrolledUpRef.current = false;
+    }
+  }, [messages]);
 
   // Toast on tool completion
   useEffect(() => {
@@ -308,14 +339,10 @@ export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatV
         )}
 
         {isStreaming && !streamingText && activeTools.length === 0 && (
-          <div className="thinking-indicator animate-fade-in">
-            <div className="thinking-dots">
-              <div className="thinking-dot" style={{ animationDelay: '0ms' }} />
-              <div className="thinking-dot" style={{ animationDelay: '160ms' }} />
-              <div className="thinking-dot" style={{ animationDelay: '320ms' }} />
-            </div>
-            <div className="thinking-bar" />
-            <span className="text-xs text-text-tertiary">Thinking...</span>
+          <div className="thinking-skeleton animate-fade-in">
+            <div className="thinking-skeleton-line w-3/4" />
+            <div className="thinking-skeleton-line w-1/2" style={{ animationDelay: '150ms' }} />
+            <div className="thinking-skeleton-line w-2/3" style={{ animationDelay: '300ms' }} />
           </div>
         )}
       </div>
