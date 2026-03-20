@@ -43,24 +43,38 @@
   .input-base {
     @apply w-full bg-surface-2 border border-border rounded-xl px-4 py-3
            text-text-primary placeholder-text-tertiary text-base
-           outline-none transition-all duration-150
-           focus:border-accent focus:ring-1 focus:ring-accent/30;
+           outline-none transition-all duration-200
+           focus:border-accent focus:ring-2 focus:ring-accent/20;
   }
 
   .btn-primary {
     @apply px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium
+           cursor-pointer select-none
            transition-all duration-150
-           hover:bg-accent-hover active:scale-[0.97];
+           hover:bg-accent-hover hover:shadow-[0_2px_12px_rgba(99,102,241,0.25)]
+           active:scale-[0.97]
+           outline-none focus-visible:ring-2 focus-visible:ring-accent/40;
   }
 
   .btn-ghost {
     @apply px-3 py-1.5 text-text-secondary rounded-lg text-sm
+           cursor-pointer select-none
            transition-all duration-150
-           hover:bg-surface-3 hover:text-text-primary;
+           hover:bg-surface-3 hover:text-text-primary
+           active:scale-[0.97]
+           outline-none focus-visible:ring-2 focus-visible:ring-accent/40;
   }
 
   .card {
-    @apply bg-surface-1 border border-border rounded-xl p-4;
+    @apply bg-surface-1 border border-border rounded-xl p-4
+           transition-all duration-150;
+  }
+
+  .card-interactive {
+    @apply card cursor-pointer select-none
+           hover:bg-surface-2 hover:border-accent/20
+           hover:translate-y-[-1px] hover:shadow-[0_2px_8px_rgba(0,0,0,0.15)]
+           active:scale-[0.98] active:translate-y-0;
   }
 
   .tool-badge {
@@ -71,6 +85,78 @@
   .shimmer-loading {
     @apply bg-gradient-to-r from-surface-2 via-surface-3 to-surface-2
            bg-[length:200%_100%] animate-shimmer rounded;
+  }
+
+  /* ── Skeleton base ── */
+  .skeleton-base {
+    @apply bg-gradient-to-r from-surface-2 via-surface-3/60 to-surface-2
+           bg-[length:200%_100%] animate-shimmer;
+  }
+
+  /* ── Message animations ── */
+  .msg-user {
+    @apply animate-slide-in-right;
+  }
+  .msg-assistant {
+    @apply animate-slide-in-left;
+  }
+
+  /* ── Tool card glow on status change ── */
+  .tool-card {
+    @apply card !p-3 !rounded-lg animate-scale-in
+           transition-all duration-300;
+  }
+  .tool-card-running {
+    @apply border-warning/20 shadow-[0_0_8px_rgba(245,158,11,0.06)];
+  }
+  .tool-card-success {
+    @apply border-success/20;
+  }
+  .tool-card-error {
+    @apply border-error/20;
+  }
+
+  /* ── History item hover accent ── */
+  .history-item {
+    @apply w-full text-left px-5 py-3.5 border-b border-border/50
+           transition-all duration-150 cursor-pointer
+           hover:bg-surface-2 hover:border-l-2 hover:border-l-accent/40;
+  }
+  .history-item-active {
+    @apply bg-surface-2 border-l-2 border-l-accent;
+  }
+
+  /* ── Provider toggle with background slide ── */
+  .provider-toggle-group {
+    @apply relative flex gap-0 bg-surface-3 rounded-lg p-0.5;
+  }
+  .provider-toggle-btn {
+    @apply relative z-10 flex-1 py-2 px-3 rounded-md text-sm font-medium
+           transition-colors duration-200 cursor-pointer select-none
+           text-text-secondary hover:text-text-primary;
+  }
+  .provider-toggle-btn-active {
+    @apply text-white;
+  }
+  .provider-toggle-slider {
+    @apply absolute top-0.5 bottom-0.5 rounded-md bg-accent
+           transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)];
+  }
+
+  /* ── Premium thinking indicator ── */
+  .thinking-indicator {
+    @apply flex items-center gap-3;
+  }
+  .thinking-dots {
+    @apply flex items-center gap-1;
+  }
+  .thinking-dot {
+    @apply w-1.5 h-1.5 rounded-full bg-accent animate-dot-bounce;
+  }
+  .thinking-bar {
+    @apply h-1 w-16 rounded-full
+           bg-gradient-to-r from-accent/20 via-accent to-accent/20
+           bg-[length:200%_100%] animate-thinking-bar;
   }
 
   /* ── Code block wrapper ── */

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Session } from '@/shared/types';
 import { getSessions, deleteSession } from '@/shared/storage';
+import { Skeleton } from '../components/Skeleton';
 
 interface Props {
   onBack: () => void;
@@ -84,12 +85,14 @@ export function HistoryView({ onBack, onSelectSession, activeSessionId }: Props)
       {/* Session List */}
       <div className="flex-1 overflow-y-auto">
         {loading && (
-          <div className="p-6 flex justify-center">
-            <div className="flex gap-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse-soft" style={{ animationDelay: '0ms' }} />
-              <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse-soft" style={{ animationDelay: '300ms' }} />
-              <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse-soft" style={{ animationDelay: '600ms' }} />
-            </div>
+          <div className="p-5 space-y-4">
+            {[0, 1, 2].map(i => (
+              <div key={i} className="space-y-2" style={{ animation: `fadeIn 150ms ease-out ${i * 60}ms both` }}>
+                <Skeleton variant="text" className="w-3/4 h-3.5" />
+                <Skeleton variant="text" className="w-1/2 h-2.5" />
+                <Skeleton variant="text" className="w-1/3 h-2" />
+              </div>
+            ))}
           </div>
         )}
 
@@ -120,10 +123,8 @@ export function HistoryView({ onBack, onSelectSession, activeSessionId }: Props)
               key={session.id}
               onClick={() => onSelectSession(session)}
               className={`
-                w-full text-left px-5 py-3.5 border-b border-border/50
-                transition-all duration-150 cursor-pointer group
-                hover:bg-surface-2
-                ${isActive ? 'bg-surface-2 border-l-2 border-l-accent' : ''}
+                history-item group
+                ${isActive ? 'history-item-active' : ''}
               `}
               style={{
                 animation: `fadeIn 150ms ease-out ${index * 30}ms both`,

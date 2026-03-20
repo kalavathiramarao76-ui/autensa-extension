@@ -73,7 +73,7 @@ export function MessageBubble({ message }: Props) {
   }, [html, isUser, attachCopyHandlers]);
 
   return (
-    <div className={`animate-fade-in ${isUser ? 'flex justify-end' : ''}`}>
+    <div className={`${isUser ? 'flex justify-end msg-user' : 'msg-assistant'}`}>
       <div className={`max-w-[95%] ${isUser
         ? 'bg-accent/15 text-text-primary rounded-2xl rounded-br-md px-4 py-2.5'
         : 'text-text-primary'

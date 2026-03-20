@@ -34,15 +34,20 @@ export function SettingsView({ onBack }: Props) {
         {/* Provider Toggle */}
         <div>
           <label className="text-xs font-medium text-text-secondary mb-2 block">AI Provider</label>
-          <div className="flex gap-2">
+          <div className="provider-toggle-group">
+            <div
+              className="provider-toggle-slider"
+              style={{
+                left: settings.provider === 'ollama' ? '2px' : '50%',
+                width: 'calc(50% - 2px)',
+              }}
+            />
             {(['ollama', 'claude'] as ApiProvider[]).map(p => (
               <button
                 key={p}
                 onClick={() => handleChange('provider', p)}
-                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-150 ${
-                  settings.provider === p
-                    ? 'bg-accent text-white'
-                    : 'bg-surface-3 text-text-secondary hover:text-text-primary'
+                className={`provider-toggle-btn ${
+                  settings.provider === p ? 'provider-toggle-btn-active' : ''
                 }`}
               >
                 {p === 'ollama' ? 'Ollama / Custom' : 'Claude API'}

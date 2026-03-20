@@ -41,6 +41,7 @@ export function Input({ value, onChange, onSubmit, placeholder = 'Message Autens
         disabled={disabled}
         rows={1}
         className="input-base resize-none pr-12 min-h-[44px]"
+        style={{ transition: 'height 150ms ease' }}
       />
       <button
         onClick={onSubmit}

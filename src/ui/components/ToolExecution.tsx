@@ -11,7 +11,10 @@ export function ToolExecution({ tools }: Props) {
   return (
     <div className="space-y-2 animate-fade-in">
       {tools.map(tool => (
-        <div key={tool.id} className="card !p-3 !rounded-lg">
+        <div key={tool.id} className={`tool-card ${
+              tool.status === 'running' ? 'tool-card-running' :
+              tool.status === 'success' ? 'tool-card-success' : 'tool-card-error'
+            }`}>
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${
               tool.status === 'running' ? 'bg-warning animate-pulse-soft' :

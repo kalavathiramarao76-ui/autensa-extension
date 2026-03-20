@@ -101,7 +101,7 @@ export function ChatView({ onOpenHistory, sessionToRestore, onSessionRestored }:
                 <button
                   key={action.id}
                   onClick={() => handleQuickAction(action.prompt)}
-                  className="card !p-3 hover:!bg-surface-2 transition-colors text-left group cursor-pointer"
+                  className="card-interactive !p-3 text-left group"
                 >
                   <span className="text-lg mb-1 block">{action.icon}</span>
                   <span className="text-xs text-text-secondary group-hover:text-text-primary transition-colors">
@@ -128,12 +128,13 @@ export function ChatView({ onOpenHistory, sessionToRestore, onSessionRestored }:
         )}
 
         {isStreaming && !streamingText && activeTools.length === 0 && (
-          <div className="flex items-center gap-2 animate-fade-in">
-            <div className="flex gap-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse-soft" style={{ animationDelay: '0ms' }} />
-              <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse-soft" style={{ animationDelay: '300ms' }} />
-              <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse-soft" style={{ animationDelay: '600ms' }} />
+          <div className="thinking-indicator animate-fade-in">
+            <div className="thinking-dots">
+              <div className="thinking-dot" style={{ animationDelay: '0ms' }} />
+              <div className="thinking-dot" style={{ animationDelay: '160ms' }} />
+              <div className="thinking-dot" style={{ animationDelay: '320ms' }} />
             </div>
+            <div className="thinking-bar" />
             <span className="text-xs text-text-tertiary">Thinking...</span>
           </div>
         )}
