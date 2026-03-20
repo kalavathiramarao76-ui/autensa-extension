@@ -50,6 +50,7 @@
     "sidePanel",
     "storage",
     "tabs",
+    "alarms",
     "declarativeNetRequest"
   ],
   "host_permissions": [

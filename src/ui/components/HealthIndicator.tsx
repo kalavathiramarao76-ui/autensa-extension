@@ -21,6 +21,10 @@ const STATUS_CONFIG: Record<HealthStatus, {
     dotClass: 'bg-error animate-[pulseSoft_1s_ease-in-out_infinite]',
     label: 'Unreachable',
   },
+  reconnecting: {
+    dotClass: 'bg-warning animate-[pulseSoft_0.8s_ease-in-out_infinite]',
+    label: 'Reconnecting...',
+  },
   checking: {
     dotClass: 'bg-text-tertiary animate-pulse-soft',
     label: 'Checking...',

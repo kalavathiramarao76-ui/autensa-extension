@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Settings } from '@/shared/types';
 
-export type HealthStatus = 'healthy' | 'degraded' | 'unreachable' | 'checking' | 'unknown';
+export type HealthStatus = 'healthy' | 'degraded' | 'unreachable' | 'reconnecting' | 'checking' | 'unknown';
 
 export interface HealthCheckResult {
   status: HealthStatus;

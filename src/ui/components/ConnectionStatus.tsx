@@ -1,18 +1,33 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { getSettings } from '@/shared/storage';
+import { useToast } from './Toast';
 
-type Status = 'online' | 'offline' | 'endpoint-unreachable' | 'reconnecting';
+type Status = 'online' | 'offline' | 'endpoint-unreachable' | 'reconnecting' | 'connection-lost' | 'reconnected';
 
 const INITIAL_RETRY_MS = 2000;
 const MAX_RETRY_MS = 30000;
-const BACKOFF_FACTOR = 1.5;
+const BACKOFF_FACTOR = 2;
+const MAX_ATTEMPTS = 5;
+const RECONNECTED_DISMISS_MS = 3000;
+
+// Backoff schedule: 2s → 4s → 8s → 16s → 30s
+function getBackoffDelay(attempt: number): number {
+  return Math.min(INITIAL_RETRY_MS * Math.pow(BACKOFF_FACTOR, attempt), MAX_RETRY_MS);
+}
 
 export function ConnectionStatus() {
   const [status, setStatus] = useState<Status>('online');
   const [visible, setVisible] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [progress, setProgress] = useState(0);
   const retryTimer = useRef<ReturnType<typeof setTimeout>>();
-  const retryDelay = useRef(INITIAL_RETRY_MS);
+  const progressRaf = useRef<number>();
+  const progressStart = useRef(0);
+  const progressDuration = useRef(0);
   const mountedRef = useRef(true);
+  const dismissTimer = useRef<ReturnType<typeof setTimeout>>();
+  const wasUnreachableRef = useRef(false);
+  const { toast } = useToast();
 
   const checkEndpoint = useCallback(async (): Promise<boolean> => {
     try {
@@ -21,10 +36,8 @@ export function ConnectionStatus() {
         ? settings.ollamaEndpoint
         : null;
 
-      // If using Claude API, we only check browser online status
       if (!endpoint) return navigator.onLine;
 
-      // Ping the endpoint root with a short timeout
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 5000);
       const res = await fetch(endpoint.replace(/\/v1\/?$/, '/v1/models'), {
@@ -32,57 +45,147 @@ export function ConnectionStatus() {
         signal: controller.signal,
       });
       clearTimeout(timeout);
-      return res.ok || res.status === 401; // 401 means reachable but auth issue
+      return res.ok || res.status === 401;
     } catch {
       return false;
     }
   }, []);
 
-  const scheduleRetry = useCallback(() => {
+  const stopProgress = useCallback(() => {
+    if (progressRaf.current) {
+      cancelAnimationFrame(progressRaf.current);
+      progressRaf.current = undefined;
+    }
+  }, []);
+
+  const animateProgress = useCallback((durationMs: number) => {
+    stopProgress();
+    progressStart.current = performance.now();
+    progressDuration.current = durationMs;
+    setProgress(0);
+
+    const tick = () => {
+      if (!mountedRef.current) return;
+      const elapsed = performance.now() - progressStart.current;
+      const pct = Math.min(elapsed / progressDuration.current, 1);
+      setProgress(pct);
+      if (pct < 1) {
+        progressRaf.current = requestAnimationFrame(tick);
+      }
+    };
+    progressRaf.current = requestAnimationFrame(tick);
+  }, [stopProgress]);
+
+  const handleReconnected = useCallback(() => {
     if (!mountedRef.current) return;
+    wasUnreachableRef.current = false;
+    setStatus('reconnected');
+    setAttempt(0);
+    setProgress(0);
+    stopProgress();
+
+    if (dismissTimer.current) clearTimeout(dismissTimer.current);
+    dismissTimer.current = setTimeout(() => {
+      if (!mountedRef.current) return;
+      setStatus('online');
+      setVisible(false);
+    }, RECONNECTED_DISMISS_MS);
+  }, [stopProgress]);
+
+  const scheduleRetry = useCallback((currentAttempt: number) => {
+    if (!mountedRef.current) return;
+    if (retryTimer.current) clearTimeout(retryTimer.current);
+
+    if (currentAttempt >= MAX_ATTEMPTS) {
+      setStatus('connection-lost');
+      stopProgress();
+      return;
+    }
+
+    const delay = getBackoffDelay(currentAttempt);
+    animateProgress(delay);
 
     retryTimer.current = setTimeout(async () => {
       if (!mountedRef.current) return;
 
       setStatus('reconnecting');
-      const reachable = await checkEndpoint();
+      const nextAttempt = currentAttempt + 1;
+      setAttempt(nextAttempt);
 
+      const reachable = await checkEndpoint();
       if (!mountedRef.current) return;
 
       if (reachable && navigator.onLine) {
-        setStatus('online');
-        setVisible(false);
-        retryDelay.current = INITIAL_RETRY_MS;
+        handleReconnected();
       } else {
         setStatus(navigator.onLine ? 'endpoint-unreachable' : 'offline');
-        retryDelay.current = Math.min(retryDelay.current * BACKOFF_FACTOR, MAX_RETRY_MS);
-        scheduleRetry();
+        scheduleRetry(nextAttempt);
       }
-    }, retryDelay.current);
-  }, [checkEndpoint]);
+    }, delay);
+  }, [checkEndpoint, animateProgress, stopProgress, handleReconnected]);
 
   const handleOffline = useCallback(() => {
+    wasUnreachableRef.current = true;
     setStatus('offline');
     setVisible(true);
-    retryDelay.current = INITIAL_RETRY_MS;
-    scheduleRetry();
+    setAttempt(0);
+    scheduleRetry(0);
   }, [scheduleRetry]);
 
   const handleOnline = useCallback(async () => {
     setStatus('reconnecting');
+    setAttempt(1);
     const reachable = await checkEndpoint();
     if (!mountedRef.current) return;
 
     if (reachable) {
-      setStatus('online');
-      setVisible(false);
-      retryDelay.current = INITIAL_RETRY_MS;
+      if (wasUnreachableRef.current) {
+        handleReconnected();
+      } else {
+        setStatus('online');
+        setVisible(false);
+      }
     } else {
+      wasUnreachableRef.current = true;
       setStatus('endpoint-unreachable');
       setVisible(true);
-      scheduleRetry();
+      scheduleRetry(1);
     }
-  }, [checkEndpoint, scheduleRetry]);
+  }, [checkEndpoint, scheduleRetry, handleReconnected]);
+
+  const handleManualRetry = useCallback(() => {
+    setAttempt(0);
+    setStatus('reconnecting');
+    wasUnreachableRef.current = true;
+    scheduleRetry(0);
+  }, [scheduleRetry]);
+
+  // Network change detection
+  useEffect(() => {
+    const connection = (navigator as any).connection;
+    if (!connection) return;
+
+    const handleChange = () => {
+      if (!mountedRef.current) return;
+      toast({ type: 'info', title: 'Network changed', duration: 3000 });
+      // Trigger immediate health check
+      checkEndpoint().then(reachable => {
+        if (!mountedRef.current) return;
+        if (!reachable && status === 'online') {
+          wasUnreachableRef.current = true;
+          setStatus('endpoint-unreachable');
+          setVisible(true);
+          setAttempt(0);
+          scheduleRetry(0);
+        } else if (reachable && status !== 'online' && status !== 'reconnected') {
+          handleReconnected();
+        }
+      });
+    };
+
+    connection.addEventListener('change', handleChange);
+    return () => connection.removeEventListener('change', handleChange);
+  }, [checkEndpoint, toast, status, scheduleRetry, handleReconnected]);
 
   // Initial check + event listeners
   useEffect(() => {
@@ -91,13 +194,14 @@ export function ConnectionStatus() {
     if (!navigator.onLine) {
       handleOffline();
     } else {
-      // Do an initial endpoint check silently
       checkEndpoint().then(reachable => {
         if (!mountedRef.current) return;
         if (!reachable) {
+          wasUnreachableRef.current = true;
           setStatus('endpoint-unreachable');
           setVisible(true);
-          scheduleRetry();
+          setAttempt(0);
+          scheduleRetry(0);
         }
       });
     }
@@ -108,13 +212,15 @@ export function ConnectionStatus() {
     // Periodic health check every 60s when online
     const healthCheck = setInterval(async () => {
       if (!mountedRef.current || !navigator.onLine) return;
+      if (status !== 'online' && status !== 'reconnected') return;
       const reachable = await checkEndpoint();
       if (!mountedRef.current) return;
-      if (!reachable && status === 'online') {
+      if (!reachable) {
+        wasUnreachableRef.current = true;
         setStatus('endpoint-unreachable');
         setVisible(true);
-        retryDelay.current = INITIAL_RETRY_MS;
-        scheduleRetry();
+        setAttempt(0);
+        scheduleRetry(0);
       }
     }, 60000);
 
@@ -124,12 +230,22 @@ export function ConnectionStatus() {
       window.removeEventListener('offline', handleOffline);
       clearInterval(healthCheck);
       if (retryTimer.current) clearTimeout(retryTimer.current);
+      if (dismissTimer.current) clearTimeout(dismissTimer.current);
+      stopProgress();
     };
-  }, [handleOffline, handleOnline, checkEndpoint, scheduleRetry, status]);
+  }, [handleOffline, handleOnline, checkEndpoint, scheduleRetry, stopProgress, status]);
 
   if (!visible) return null;
+  if (status === 'online') return null;
 
-  const config: Record<Exclude<Status, 'online'>, { icon: React.ReactNode; text: string; color: string; bgColor: string }> = {
+  const configs: Record<Exclude<Status, 'online'>, {
+    icon: React.ReactNode;
+    text: string;
+    color: string;
+    bgColor: string;
+    borderColor: string;
+    progressColor: string;
+  }> = {
     offline: {
       icon: (
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -144,7 +260,9 @@ export function ConnectionStatus() {
       ),
       text: 'You are offline',
       color: 'text-warning',
-      bgColor: 'bg-warning/10 border-warning/20',
+      bgColor: 'bg-warning/10',
+      borderColor: 'border-warning/20',
+      progressColor: '#f59e0b',
     },
     'endpoint-unreachable': {
       icon: (
@@ -155,8 +273,10 @@ export function ConnectionStatus() {
         </svg>
       ),
       text: 'API endpoint unreachable',
-      color: 'text-error',
-      bgColor: 'bg-error/10 border-error/20',
+      color: 'text-warning',
+      bgColor: 'bg-warning/10',
+      borderColor: 'border-warning/20',
+      progressColor: '#f59e0b',
     },
     reconnecting: {
       icon: (
@@ -164,31 +284,70 @@ export function ConnectionStatus() {
           <path d="M21 12a9 9 0 1 1-6.219-8.56" />
         </svg>
       ),
-      text: 'Reconnecting...',
-      color: 'text-text-secondary',
-      bgColor: 'bg-surface-3/50 border-border',
+      text: `Reconnecting... (attempt ${attempt}/${MAX_ATTEMPTS})`,
+      color: 'text-warning',
+      bgColor: 'bg-warning/10',
+      borderColor: 'border-warning/20',
+      progressColor: '#f59e0b',
+    },
+    'connection-lost': {
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M15 9l-6 6M9 9l6 6" />
+        </svg>
+      ),
+      text: 'Connection lost',
+      color: 'text-error',
+      bgColor: 'bg-error/10',
+      borderColor: 'border-error/20',
+      progressColor: '#ef4444',
+    },
+    reconnected: {
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      ),
+      text: 'Reconnected',
+      color: 'text-success',
+      bgColor: 'bg-success/10',
+      borderColor: 'border-success/20',
+      progressColor: '#22c55e',
     },
   };
 
-  if (status === 'online') return null;
+  const config = configs[status];
 
-  const { icon, text, color, bgColor } = config[status];
+  const showRetryButton = status === 'connection-lost' || status === 'offline' || status === 'endpoint-unreachable';
+  const showProgressBar = status === 'reconnecting' || status === 'endpoint-unreachable' || status === 'offline';
 
   return (
-    <div className={`mx-4 mt-1 px-3 py-2 rounded-lg border flex items-center gap-2 animate-slide-down ${bgColor}`}>
-      <span className={color}>{icon}</span>
-      <span className={`text-2xs ${color} font-medium flex-1`}>{text}</span>
-      {status !== 'reconnecting' && (
-        <button
-          onClick={() => {
-            retryDelay.current = INITIAL_RETRY_MS;
-            setStatus('reconnecting');
-            handleOnline();
-          }}
-          className="text-2xs text-accent hover:text-accent-hover transition-colors font-medium"
-        >
-          Retry
-        </button>
+    <div className={`mx-4 mt-1 rounded-lg border ${config.borderColor} ${config.bgColor} animate-slide-down overflow-hidden transition-all duration-200`}>
+      <div className="px-3 py-2 flex items-center gap-2">
+        <span className={config.color}>{config.icon}</span>
+        <span className={`text-2xs ${config.color} font-medium flex-1`}>{config.text}</span>
+        {showRetryButton && (
+          <button
+            onClick={handleManualRetry}
+            className="text-2xs text-accent hover:text-accent-hover transition-colors font-medium px-2 py-0.5 rounded-md hover:bg-accent/10"
+          >
+            Retry
+          </button>
+        )}
+      </div>
+      {/* Progress bar — shows time until next retry */}
+      {showProgressBar && (
+        <div className="h-[2px] w-full" style={{ backgroundColor: `${config.progressColor}15` }}>
+          <div
+            className="h-full transition-none"
+            style={{
+              width: `${progress * 100}%`,
+              backgroundColor: config.progressColor,
+              opacity: 0.7,
+            }}
+          />
+        </div>
       )}
     </div>
   );

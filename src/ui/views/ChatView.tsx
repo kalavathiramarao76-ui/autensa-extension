@@ -36,8 +36,9 @@ export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatV
 ) {
   const {
     messages, isStreaming, streamingText, activeTools, sessionId,
-    sessionUsage, rateLimit,
+    sessionUsage, rateLimit, portStatus,
     sendMessage, clearMessages, restoreSession, newSession,
+    retryFailedMessage, dismissFailedMessage,
   } = useAgent();
   const { settings, isConfigured } = useSettings();
   const { mode: themeMode, cycleTheme } = useTheme();
@@ -353,6 +354,32 @@ export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatV
           <span>{messages.length} msg{messages.length !== 1 ? 's' : ''}</span>
           <span>{formatTokenCount(sessionUsage.totalTokens)} tokens{sessionUsage.estimated ? '' : ' (actual)'}</span>
           <span className="truncate max-w-[120px]">{settings.model}</span>
+        </div>
+      )}
+
+      {/* Port disconnect — resend prompt */}
+      {portStatus.failedMessage && (
+        <div className="mx-4 mb-1 px-3 py-2 rounded-lg border border-warning/20 bg-warning/10 flex items-center gap-2 animate-slide-down">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-warning flex-shrink-0">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+          <span className="text-2xs text-warning font-medium flex-1 truncate">
+            Message interrupted. Resend?
+          </span>
+          <button
+            onClick={retryFailedMessage}
+            className="text-2xs text-accent hover:text-accent-hover transition-colors font-medium px-2 py-0.5 rounded-md hover:bg-accent/10"
+          >
+            Resend
+          </button>
+          <button
+            onClick={dismissFailedMessage}
+            className="text-2xs text-text-tertiary hover:text-text-secondary transition-colors"
+          >
+            Dismiss
+          </button>
         </div>
       )}
 

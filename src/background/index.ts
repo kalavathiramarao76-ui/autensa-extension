@@ -8,6 +8,39 @@ import { getFromCache, addToCache, clearCache, getCacheStats, isCacheable } from
 // Session state
 let currentSession: Session | null = null;
 
+// ─── Keep-Alive for Service Worker ───
+const KEEP_ALIVE_ALARM = 'autensa-keep-alive';
+const KEEP_ALIVE_INTERVAL_MIN = 0.4; // ~24 seconds (under 30s kill threshold)
+let activeConversations = 0;
+let activePorts = 0;
+
+function startKeepAlive() {
+  chrome.alarms.create(KEEP_ALIVE_ALARM, {
+    periodInMinutes: KEEP_ALIVE_INTERVAL_MIN,
+  });
+}
+
+function stopKeepAlive() {
+  chrome.alarms.clear(KEEP_ALIVE_ALARM);
+}
+
+function updateKeepAlive() {
+  if (activeConversations > 0 || activePorts > 0) {
+    startKeepAlive();
+  } else {
+    stopKeepAlive();
+  }
+}
+
+// Handle keep-alive alarm — just a no-op ping to stay alive
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === KEEP_ALIVE_ALARM) {
+    // No-op: the alarm handler itself keeps the service worker alive
+    // Optionally do a lightweight self-check
+    return;
+  }
+});
+
 // ─── Rate Limit Tracking ───
 const requestTimestamps: number[] = [];
 const RATE_WINDOW_MS = 60_000; // 1 minute window
@@ -94,6 +127,15 @@ async function streamCachedResponse(
 // Handle port connections for streaming
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name !== 'autensa-stream') return;
+
+  // Track active port for keep-alive
+  activePorts++;
+  updateKeepAlive();
+
+  port.onDisconnect.addListener(() => {
+    activePorts = Math.max(0, activePorts - 1);
+    updateKeepAlive();
+  });
 
   port.onMessage.addListener(async (msg: MessageType) => {
     if (msg.type !== 'AGENT_REQUEST') return;
@@ -236,7 +278,7 @@ chrome.runtime.onConnect.addListener((port) => {
 });
 
 // Handle one-shot messages
-chrome.runtime.onMessage.addListener((msg: MessageType, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((msg: any, _sender, sendResponse) => {
   if (msg.type === 'OPEN_SIDE_PANEL') {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]?.id) {
@@ -252,6 +294,15 @@ chrome.runtime.onMessage.addListener((msg: MessageType, _sender, sendResponse) =
     sendResponse(getCacheStats());
   } else if (msg.type === 'CACHE_CLEAR') {
     clearCache();
+    sendResponse({ ok: true });
+  } else if (msg.type === 'CONVERSATION_ACTIVITY') {
+    // Track active conversations for keep-alive
+    if (msg.payload?.active) {
+      activeConversations++;
+    } else {
+      activeConversations = Math.max(0, activeConversations - 1);
+    }
+    updateKeepAlive();
     sendResponse({ ok: true });
   }
   return true;
@@ -271,4 +322,9 @@ chrome.commands.onCommand.addListener((command) => {
 // Open side panel on install
 chrome.runtime.onInstalled.addListener(() => {
   chrome.sidePanel.setOptions({ enabled: true });
+  // Clean up any stale keep-alive alarms
+  stopKeepAlive();
 });
+
+// Clean up keep-alive when service worker starts fresh
+stopKeepAlive();
