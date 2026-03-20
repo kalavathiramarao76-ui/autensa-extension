@@ -13,14 +13,15 @@ export const vercelTools: Tool[] = [
     },
     async execute(args: { limit?: number }) {
       const result = await vercel.listProjects(args.limit || 10);
+      const projects = result.projects || [];
       return {
         success: true,
-        data: result.projects?.map((p: any) => ({
-          name: p.name,
-          id: p.id,
-          framework: p.framework,
-          updatedAt: p.updatedAt,
-          url: `https://${p.name}.vercel.app`,
+        data: projects.map((p: any) => ({
+          name: p.name || 'Unknown',
+          id: p.id || '',
+          framework: p.framework || null,
+          updatedAt: p.updatedAt || null,
+          url: p.name ? `https://${p.name}.vercel.app` : null,
         })),
       };
     },
@@ -37,16 +38,17 @@ export const vercelTools: Tool[] = [
     },
     async execute(args: { project_id?: string; limit?: number }) {
       const result = await vercel.listDeployments(args.project_id, args.limit || 10);
+      const deployments = result.deployments || [];
       return {
         success: true,
-        data: result.deployments?.map((d: any) => ({
-          id: d.uid,
-          name: d.name,
-          state: d.state || d.readyState,
+        data: deployments.map((d: any) => ({
+          id: d.uid || d.id || '',
+          name: d.name || 'Unknown',
+          state: d.state || d.readyState || 'unknown',
           url: d.url ? `https://${d.url}` : null,
-          created: d.created,
-          target: d.target,
-          source: d.source,
+          created: d.created || d.createdAt || null,
+          target: d.target || null,
+          source: d.source || null,
         })),
       };
     },
