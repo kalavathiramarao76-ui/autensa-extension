@@ -432,7 +432,7 @@ export const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(function ChatV
             <p className="text-text-tertiary text-2xs mb-6">
               Press <kbd className="px-1 py-0.5 rounded bg-surface-3 text-text-tertiary font-mono text-2xs">/</kbd> to start typing
             </p>
-            <div className={`grid grid-cols-2 ${compact ? 'gap-1.5' : 'gap-2'} w-full max-w-xs`}>
+            <div className={`qa-grid grid grid-cols-2 ${compact ? 'gap-1.5' : 'gap-2'} w-full max-w-xs`}>
               {qaItems.map((action, idx) => (
                 <button
                   key={action.id}

@@ -41,7 +41,7 @@
 
   body {
     @apply bg-surface-0 text-text-primary font-sans text-base antialiased;
-    min-width: 400px;
+    min-width: 280px;
     transition: background-color 200ms ease, color 200ms ease;
   }
 
@@ -397,6 +397,19 @@
     border: 1px solid rgb(var(--border));
     display: block;
     overflow-x: auto;
+    min-width: 320px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Horizontal scrollbar for tables */
+  .prose table::-webkit-scrollbar {
+    height: 4px;
+  }
+  .prose table::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .prose table::-webkit-scrollbar-thumb {
+    @apply bg-surface-4 rounded-full;
   }
 
   .prose thead {
@@ -441,6 +454,19 @@
     max-width: 280px;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  /* Links inside table cells must be visible */
+  .prose tbody td a,
+  .prose thead th a {
+    color: #6366f1 !important;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .prose tbody td a:hover,
+  .prose thead th a:hover {
+    color: #818cf8 !important;
+    text-decoration: underline;
   }
 
   /* Right-align numeric cells (stars, issue numbers that are pure digits) */
@@ -523,9 +549,87 @@
 
   /* ── Links in prose ── */
   .prose a {
-    @apply text-accent no-underline transition-colors duration-100;
+    color: #6366f1 !important;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 100ms ease, text-decoration 100ms ease;
   }
   .prose a:hover {
-    @apply underline;
+    color: #818cf8 !important;
+    text-decoration: underline;
+  }
+  .prose a:visited {
+    color: #8b5cf6 !important;
+  }
+
+  /* ── Tool result rendered markdown ── */
+  .tool-result-rendered {
+    @apply text-xs text-text-secondary bg-surface-1 px-3 py-2 max-h-80 overflow-y-auto;
+  }
+  .tool-result-rendered a {
+    color: #6366f1 !important;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .tool-result-rendered a:hover {
+    color: #818cf8 !important;
+    text-decoration: underline;
+  }
+
+  /* ── Table scroll wrapper with hint ── */
+  .table-scroll-wrapper {
+    position: relative;
+    overflow: hidden;
+  }
+  .table-scroll-wrapper::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 24px;
+    background: linear-gradient(to right, transparent, rgb(var(--surface-1) / 0.8));
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 200ms ease;
+  }
+  .table-scroll-wrapper.has-overflow::after {
+    opacity: 1;
+  }
+  .table-scroll-wrapper.scrolled-end::after {
+    opacity: 0;
+  }
+}
+
+/* ── Narrow panel responsive overrides (side panel ~300-400px) ── */
+@media (max-width: 500px) {
+  .prose table {
+    font-size: 0.75rem;
+  }
+
+  .prose thead th {
+    padding: 6px 8px;
+    font-size: 0.5625rem;
+  }
+
+  .prose tbody td {
+    padding: 5px 8px;
+    font-size: 0.6875rem;
+    max-width: 180px;
+  }
+
+  /* Tighter side padding */
+  .sidepanel-root .px-5 {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+  .sidepanel-root .px-4 {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  /* Quick actions: single column when very narrow */
+  .qa-grid {
+    grid-template-columns: 1fr !important;
   }
 }

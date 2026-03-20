@@ -1,5 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ToolCallDisplay } from '@/shared/types';
+import { marked, Renderer } from 'marked';
+
+/* ── Tool result renderer: links open in new tab ── */
+const toolRenderer = new Renderer();
+toolRenderer.link = function ({ href, text }: { href: string; text: string }) {
+  const escaped = (text || href || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  return `<a href="${href}" target="_blank" rel="noopener noreferrer">${escaped}</a>`;
+};
 
 interface Props {
   tools: ToolCallDisplay[];
@@ -22,15 +33,31 @@ function ToolResultCard({ result }: { result: string }) {
   const [expanded, setExpanded] = useState(false);
   const isLong = result.length > 120;
 
+  const html = useMemo(() => {
+    return marked.parse(result, { breaks: true, gfm: true, renderer: toolRenderer }) as string;
+  }, [result]);
+
   return (
     <div className="tool-result-container">
-      <div
-        className={`tool-result-preview ${expanded ? 'expanded' : ''}`}
-        onClick={() => isLong && setExpanded(!expanded)}
-        style={isLong ? { cursor: 'pointer' } : { cursor: 'default' }}
-      >
-        {expanded ? result : result.slice(0, 200)}
-      </div>
+      {expanded ? (
+        <div
+          className="tool-result-rendered prose prose-sm max-w-none
+            prose-a:text-[#6366f1] prose-a:no-underline hover:prose-a:underline prose-a:cursor-pointer
+            prose-p:text-text-secondary prose-p:my-1
+            prose-strong:text-text-primary
+            prose-li:text-text-secondary prose-li:my-0.5
+            prose-code:text-accent prose-code:bg-surface-3 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs"
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      ) : (
+        <div
+          className={`tool-result-preview`}
+          onClick={() => isLong && setExpanded(true)}
+          style={isLong ? { cursor: 'pointer' } : { cursor: 'default' }}
+        >
+          {result.slice(0, 200)}
+        </div>
+      )}
       {isLong && (
         <div className="tool-result-toggle" onClick={() => setExpanded(!expanded)}>
           {expanded ? '\u25b2 Collapse' : '\u25bc Show more'}

@@ -95,12 +95,12 @@ export function MessageBubble({ message }: Props) {
         ) : (
           <div
             ref={contentRef}
-            className="prose prose-invert prose-sm max-w-none
+            className="prose prose-sm max-w-none
               prose-p:text-text-primary prose-p:leading-relaxed prose-p:my-1.5
               prose-headings:text-text-primary prose-headings:mt-4 prose-headings:mb-2
               prose-code:text-accent prose-code:bg-surface-3 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:font-mono
               prose-pre:bg-transparent prose-pre:p-0 prose-pre:m-0 prose-pre:border-0
-              prose-a:text-accent prose-a:no-underline hover:prose-a:underline
+              prose-a:text-[#6366f1] prose-a:no-underline hover:prose-a:underline prose-a:cursor-pointer
               prose-li:text-text-primary prose-li:my-0.5
               prose-strong:text-text-primary"
             dangerouslySetInnerHTML={{ __html: html || '' }}
