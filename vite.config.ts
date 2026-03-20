@@ -11,6 +11,7 @@ export default defineConfig({
       writeBundle() {
         const dist = resolve(__dirname, 'dist');
         copyFileSync(resolve(__dirname, 'manifest.json'), resolve(dist, 'manifest.json'));
+        copyFileSync(resolve(__dirname, 'cors_rules.json'), resolve(dist, 'cors_rules.json'));
         const iconsDir = resolve(dist, 'icons');
         if (!existsSync(iconsDir)) mkdirSync(iconsDir, { recursive: true });
         ['icon-16.png', 'icon-48.png', 'icon-128.png'].forEach(icon => {

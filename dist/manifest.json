@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Autensa",
   "description": "Agentic AI assistant — tasks, not just chat",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "icons": {
     "16": "icons/icon-16.png",
     "48": "icons/icon-48.png",
@@ -49,13 +49,25 @@
     "activeTab",
     "sidePanel",
     "storage",
-    "tabs"
+    "tabs",
+    "declarativeNetRequest"
   ],
   "host_permissions": [
     "https://api.anthropic.com/*",
     "https://api.github.com/*",
     "https://api.vercel.com/*",
     "http://sai.sharedllm.com/*",
-    "https://sai.sharedllm.com/*"
-  ]
+    "https://sai.sharedllm.com/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "cors_rules",
+        "enabled": true,
+        "path": "cors_rules.json"
+      }
+    ]
+  }
 }
