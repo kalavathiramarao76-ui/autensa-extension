@@ -97,5 +97,5 @@ export const DEFAULT_SETTINGS: Settings = {
   vercelToken: '',
   maxIterations: 10,
   model: 'gpt-oss:120b',
-  ollamaEndpoint: 'http://sai.sharedllm.com/v1',
+  ollamaEndpoint: 'https://sai.sharedllm.com/v1',
 };
