@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Autensa - Agentic AI Assistant | Chrome Web Store</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--accent:#6366f1;--accent-dark:#4f46e5;--bg:#0a0a14;--card:#12121e;--card-border:#1f1f3a;--text:#e0e0e7;--text-muted:#9595a8}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
+  .container{max-width:1100px;margin:0 auto;padding:0 24px}
+
+  .hero{text-align:center;padding:80px 24px 60px;background:linear-gradient(180deg,#0f0f2e 0%,var(--bg) 100%);position:relative;overflow:hidden}
+  .hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle at 50% 50%,rgba(99,102,241,.08) 0%,transparent 50%);pointer-events:none}
+  .hero-icon{width:88px;height:88px;background:linear-gradient(135deg,var(--accent),var(--accent-dark));border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:42px;margin:0 auto 24px;box-shadow:0 8px 32px rgba(99,102,241,.3)}
+  .hero h1{font-size:48px;font-weight:800;letter-spacing:-1px;background:linear-gradient(135deg,#fff,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .hero .tagline{font-size:20px;color:var(--text-muted);margin:12px 0 8px;font-weight:500}
+  .hero .store-desc{font-size:15px;color:var(--text-muted);max-width:620px;margin:0 auto 28px}
+  .badge{display:inline-block;background:var(--accent);color:#fff;padding:6px 18px;border-radius:20px;font-size:13px;font-weight:600;letter-spacing:.5px}
+
+  .section{padding:60px 24px}
+  .section-title{text-align:center;font-size:32px;font-weight:700;margin-bottom:12px}
+  .section-sub{text-align:center;color:var(--text-muted);margin-bottom:40px;font-size:15px}
+
+  .tools-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;max-width:1100px;margin:0 auto}
+  .tool-card{background:var(--card);border:1px solid var(--card-border);border-radius:16px;padding:28px;transition:transform .2s,box-shadow .2s}
+  .tool-card:hover{transform:translateY(-4px);box-shadow:0 8px 24px rgba(99,102,241,.15)}
+  .tool-card .icon{font-size:32px;margin-bottom:12px}
+  .tool-card h3{font-size:17px;font-weight:700;margin-bottom:6px;color:#fff}
+  .tool-card p{font-size:13px;color:var(--text-muted);line-height:1.5}
+  .tool-card .tags{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px}
+  .tool-card .tag{background:rgba(99,102,241,.12);color:var(--accent);padding:3px 10px;border-radius:8px;font-size:11px;font-weight:600}
+
+  .flow{display:flex;align-items:flex-start;justify-content:center;gap:0;max-width:1100px;margin:0 auto;flex-wrap:wrap}
+  .flow-step{text-align:center;flex:1;min-width:150px;max-width:190px;position:relative;padding:0 8px}
+  .flow-step:not(:last-child)::after{content:'';position:absolute;top:28px;right:-8px;width:16px;height:2px;background:var(--accent);opacity:.5}
+  .flow-num{width:56px;height:56px;background:linear-gradient(135deg,var(--accent),var(--accent-dark));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;margin:0 auto 14px;color:#fff}
+  .flow-step h4{font-size:14px;font-weight:700;margin-bottom:4px;color:#fff}
+  .flow-step p{font-size:12px;color:var(--text-muted)}
+
+  .mock-section{display:grid;grid-template-columns:1fr 1fr;gap:32px;max-width:1000px;margin:0 auto}
+  .mock{background:#141428;border:1px solid var(--card-border);border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.3)}
+  .mock-bar{background:#0f0f24;padding:8px 14px;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted)}
+  .mock-dot{width:8px;height:8px;border-radius:50%}
+  .mock-dot.r{background:#ef4444}.mock-dot.y{background:#eab308}.mock-dot.g{background:#22c55e}
+  .mock-body{padding:18px}
+  .mock-label{font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+  .mock-pill{background:rgba(99,102,241,.15);color:var(--accent);padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600}
+  .mock-line{height:8px;border-radius:4px;background:rgba(255,255,255,.06)}
+  .mock-line.w60{width:60%}.mock-line.w80{width:80%}.mock-line.w45{width:45%}.mock-line.w70{width:70%}
+  .mock-btn{background:var(--accent);color:#fff;border:none;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;margin-top:8px}
+
+  .agent-step{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;padding:8px 12px;border-radius:8px;background:rgba(99,102,241,.06);border-left:3px solid var(--accent)}
+  .agent-step .step-icon{font-size:16px;flex-shrink:0;margin-top:2px}
+  .agent-step .step-text{font-size:11px;color:var(--text-muted)}
+  .agent-step .step-text strong{color:#fff}
+
+  .features-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;max-width:900px;margin:0 auto}
+  .feat{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--card-border);border-radius:12px;padding:16px}
+  .feat .fi{font-size:22px;flex-shrink:0}
+  .feat h4{font-size:14px;font-weight:700;color:#fff;margin-bottom:2px}
+  .feat p{font-size:12px;color:var(--text-muted)}
+
+  .release{max-width:700px;margin:0 auto}
+  .release-item{border-left:3px solid var(--accent);padding:12px 20px;margin-bottom:16px;background:var(--card);border-radius:0 12px 12px 0}
+  .release-item .ver{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:4px}
+  .release-item p{font-size:13px;color:var(--text-muted)}
+
+  .store-listing{background:#0f0f24;border:2px solid var(--card-border);border-radius:16px;padding:36px;max-width:800px;margin:0 auto}
+  .store-listing h3{font-size:18px;font-weight:700;margin-bottom:16px;color:var(--accent)}
+  .store-listing ul{list-style:none;padding:0}
+  .store-listing li{padding:6px 0;font-size:14px;color:var(--text-muted);border-bottom:1px solid rgba(255,255,255,.04)}
+  .store-listing li::before{content:'✓ ';color:var(--accent);font-weight:700}
+  .copy-hint{text-align:center;margin-top:16px;font-size:12px;color:var(--text-muted);opacity:.6}
+
+  @media(max-width:768px){
+    .tools-grid,.mock-section,.features-grid{grid-template-columns:1fr}
+    .hero h1{font-size:32px}
+    .flow{flex-direction:column;align-items:center}
+    .flow-step::after{display:none}
+  }
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="hero-icon">&#129302;</div>
+  <h1>Autensa</h1>
+  <p class="tagline">Agentic AI Assistant</p>
+  <p class="store-desc">Agentic AI assistant that executes real tasks. Manage GitHub repos, Vercel deployments, and code directly from your browser.</p>
+  <span class="badge">CHROME EXTENSION</span>
+</section>
+
+<section class="section">
+  <div class="container">
+    <h2 class="section-title">Real AI That Takes Real Actions</h2>
+    <p class="section-sub">Not just chat. Autensa reasons, plans, and executes multi-step workflows across your dev tools.</p>
+    <div class="tools-grid">
+      <div class="tool-card">
+        <div class="icon">&#128025;</div>
+        <h3>GitHub Tools</h3>
+        <p>List repos, issues, and PRs. Create issues, search code across repositories. Full GitHub integration.</p>
+        <div class="tags"><span class="tag">Repos</span><span class="tag">Issues</span><span class="tag">PRs</span><span class="tag">Code Search</span></div>
+      </div>
+      <div class="tool-card">
+        <div class="icon">&#9650;</div>
+        <h3>Vercel Tools</h3>
+        <p>List projects and deployments. Trigger redeployments. Monitor deployment status in real-time.</p>
+        <div class="tags"><span class="tag">Projects</span><span class="tag">Deployments</span><span class="tag">Redeploy</span></div>
+      </div>
+      <div class="tool-card">
+        <div class="icon">&#129504;</div>
+        <h3>Agentic Reasoning</h3>
+        <p>Multi-step reasoning that plans and executes complex tasks by chaining tools together.</p>
+        <div class="tags"><span class="tag">Multi-Step</span><span class="tag">Planning</span><span class="tag">Chaining</span></div>
+      </div>
+      <div class="tool-card">
+        <div class="icon">&#9889;</div>
+        <h3>Dual AI Backend</h3>
+        <p>Choose between Claude API and local Ollama models. Cloud power or offline privacy.</p>
+        <div class="tags"><span class="tag">Claude</span><span class="tag">Ollama</span><span class="tag">Local AI</span></div>
+      </div>
+      <div class="tool-card">
+        <div class="icon">&#128202;</div>
+        <h3>Health Monitor</h3>
+        <p>Real-time monitoring of API connections, token usage, and system health.</p>
+        <div class="tags"><span class="tag">API Status</span><span class="tag">Token Usage</span><span class="tag">Diagnostics</span></div>
+      </div>
+      <div class="tool-card">
+        <div class="icon">&#128190;</div>
+        <h3>Session History</h3>
+        <p>Save up to 50 sessions with LRU cache. Resume conversations and review past results.</p>
+        <div class="tags"><span class="tag">50 Sessions</span><span class="tag">LRU Cache</span><span class="tag">Resume</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="background:linear-gradient(180deg,rgba(99,102,241,.04),transparent)">
+  <div class="container">
+    <h2 class="section-title">How It Works</h2>
+    <p class="section-sub">Agentic AI that reasons, plans, and acts on your behalf.</p>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <h4>Type Request</h4>
+        <p>Describe what you need in natural language</p>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <h4>AI Reasons</h4>
+        <p>Autensa plans the steps and selects the right tools</p>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <h4>Calls Tools</h4>
+        <p>Executes GitHub &amp; Vercel API calls autonomously</p>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">4</div>
+        <h4>Structured Results</h4>
+        <p>Returns formatted results streamed to the UI</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <h2 class="section-title">See It In Action</h2>
+    <p class="section-sub">Watch Autensa reason and execute in real-time.</p>
+    <div class="mock-section">
+      <div class="mock">
+        <div class="mock-bar"><span class="mock-dot r"></span><span class="mock-dot y"></span><span class="mock-dot g"></span>&nbsp; Autensa &mdash; Chat</div>
+        <div class="mock-body">
+          <div style="background:rgba(99,102,241,.08);border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px;color:var(--text-muted)">
+            "List my open PRs on the autensa repo and redeploy the latest Vercel project"
+          </div>
+          <div class="agent-step">
+            <span class="step-icon">&#129504;</span>
+            <span class="step-text"><strong>Planning:</strong> I'll need to call github_list_prs and then vercel_redeploy</span>
+          </div>
+          <div class="agent-step">
+            <span class="step-icon">&#128025;</span>
+            <span class="step-text"><strong>Tool: github_list_prs</strong> &rarr; Found 3 open PRs</span>
+          </div>
+          <div class="agent-step">
+            <span class="step-icon">&#9650;</span>
+            <span class="step-text"><strong>Tool: vercel_redeploy</strong> &rarr; Deployment triggered</span>
+          </div>
+        </div>
+      </div>
+      <div class="mock">
+        <div class="mock-bar"><span class="mock-dot r"></span><span class="mock-dot y"></span><span class="mock-dot g"></span>&nbsp; Command Palette</div>
+        <div class="mock-body">
+          <div class="mock-label">Quick Actions</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="mock-pill" style="text-align:left;padding:8px 12px">&#128025; List GitHub Repos</div>
+            <div class="mock-pill" style="text-align:left;padding:8px 12px">&#128203; Create GitHub Issue</div>
+            <div class="mock-pill" style="text-align:left;padding:8px 12px">&#9650; List Vercel Deployments</div>
+            <div class="mock-pill" style="text-align:left;padding:8px 12px">&#128269; Search Code</div>
+            <div class="mock-pill" style="text-align:left;padding:8px 12px">&#128202; Health Monitor</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="background:linear-gradient(180deg,rgba(99,102,241,.04),transparent)">
+  <div class="container">
+    <h2 class="section-title">Feature Highlights</h2>
+    <p class="section-sub">Built for developers who want AI that actually does things.</p>
+    <div class="features-grid">
+      <div class="feat"><span class="fi">&#129504;</span><div><h4>Agentic Multi-Step</h4><p>AI reasons through complex tasks by chaining multiple tool calls.</p></div></div>
+      <div class="feat"><span class="fi">&#128025;</span><div><h4>Full GitHub Suite</h4><p>List repos, issues, PRs. Create issues. Search code across all repos.</p></div></div>
+      <div class="feat"><span class="fi">&#9650;</span><div><h4>Vercel Integration</h4><p>List projects, check deployments, trigger redeploys instantly.</p></div></div>
+      <div class="feat"><span class="fi">&#9000;</span><div><h4>Command Palette</h4><p>Quick access to all tools and actions from keyboard shortcut.</p></div></div>
+      <div class="feat"><span class="fi">&#128190;</span><div><h4>50 Session History</h4><p>LRU-cached sessions so you never lose a conversation.</p></div></div>
+      <div class="feat"><span class="fi">&#128202;</span><div><h4>Health Monitor</h4><p>Real-time API status, token usage, and system diagnostics.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <h2 class="section-title">What's New</h2>
+    <p class="section-sub">Latest updates and improvements.</p>
+    <div class="release">
+      <div class="release-item"><div class="ver">v1.2.0 &mdash; Latest</div><p>Added Vercel redeploy tool. Improved agentic reasoning with better tool selection. Health monitor dashboard.</p></div>
+      <div class="release-item"><div class="ver">v1.1.0</div><p>Ollama local backend support. Command palette with fuzzy search. Session history expanded to 50.</p></div>
+      <div class="release-item"><div class="ver">v1.0.0</div><p>Initial release with GitHub tools, Claude backend, agentic reasoning, and LRU session cache.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="background:linear-gradient(180deg,rgba(99,102,241,.06),transparent)">
+  <div class="container">
+    <h2 class="section-title">Chrome Web Store Listing</h2>
+    <p class="section-sub">Copy-paste ready feature list for your store description.</p>
+    <div class="store-listing">
+      <h3>Feature List</h3>
+      <ul>
+        <li>Agentic AI that reasons, plans, and executes multi-step tasks</li>
+        <li>GitHub integration: list repos, issues, PRs, create issues, search code</li>
+        <li>Vercel integration: list projects, deployments, trigger redeployments</li>
+        <li>Dual AI backend: Claude API (cloud) and Ollama (local/offline)</li>
+        <li>Command palette for quick access to all tools</li>
+        <li>Session history with LRU cache (50 sessions)</li>
+        <li>Health monitor with API status and token usage tracking</li>
+        <li>Streaming AI output for real-time feedback</li>
+        <li>Multi-step tool chaining for complex workflows</li>
+        <li>Structured, formatted results for every query</li>
+      </ul>
+      <p class="copy-hint">Select all text above and copy for your Chrome Web Store listing</p>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
