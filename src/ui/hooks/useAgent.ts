@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { Message, ToolCallDisplay, PageContext, MessageType, Session, UsageData } from '@/shared/types';
 import { uid } from '@/shared/message-bus';
 import { saveSession } from '@/shared/storage';
+import { incrementUsage } from '@/shared/usage';
 
 export interface RateLimitState {
   warning: boolean;          // true when >15 req/min
@@ -243,6 +244,7 @@ export function useAgent(): UseAgentReturn {
   }, [persistSession, isStreaming]);
 
   const sendMessage = useCallback((text: string, context?: PageContext) => {
+    incrementUsage();
     // Signal active conversation for keep-alive
     signalActivity(true);
 
