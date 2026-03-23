@@ -1,38 +1,68 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#6366f1"/>
-      <stop offset="100%" stop-color="#4f46e5"/>
+      <stop offset="0%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#3730a3"/>
     </linearGradient>
-    <linearGradient id="shine" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="rgba(255,255,255,0.2)"/>
-      <stop offset="50%" stop-color="rgba(255,255,255,0)"/>
+    <linearGradient id="bgSheen" x1="0%" y1="0%" x2="45%" y2="45%">
+      <stop offset="0%" stop-color="#6366f1" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
     </linearGradient>
+    <radialGradient id="brainGlow" cx="50%" cy="50%" r="15%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.3"/>
+    </filter>
+    <filter id="pathGlow">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
   </defs>
   <!-- Background -->
   <rect width="128" height="128" rx="28" fill="url(#bg)"/>
-  <!-- Shine -->
-  <rect width="128" height="128" rx="28" fill="url(#shine)"/>
-  <!-- Brain outline (left hemisphere) -->
-  <path d="M64 30 Q44 30 38 44 Q32 54 36 64 Q32 72 38 82 Q44 94 64 96" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
-  <!-- Brain outline (right hemisphere) -->
-  <path d="M64 30 Q84 30 90 44 Q96 54 92 64 Q96 72 90 82 Q84 94 64 96" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
-  <!-- Brain center line -->
-  <line x1="64" y1="30" x2="64" y2="96" stroke="white" stroke-width="2" opacity="0.4"/>
-  <!-- Circuit nodes -->
-  <circle cx="46" cy="50" r="4" fill="white"/>
-  <circle cx="82" cy="50" r="4" fill="white"/>
-  <circle cx="40" cy="70" r="4" fill="white"/>
-  <circle cx="88" cy="70" r="4" fill="white"/>
-  <circle cx="64" cy="62" r="5" fill="white"/>
-  <!-- Circuit connections -->
-  <line x1="46" y1="50" x2="64" y2="62" stroke="white" stroke-width="2" opacity="0.7"/>
-  <line x1="82" y1="50" x2="64" y2="62" stroke="white" stroke-width="2" opacity="0.7"/>
-  <line x1="40" y1="70" x2="64" y2="62" stroke="white" stroke-width="2" opacity="0.7"/>
-  <line x1="88" y1="70" x2="64" y2="62" stroke="white" stroke-width="2" opacity="0.7"/>
-  <!-- Outer connection dots -->
-  <circle cx="28" cy="56" r="2.5" fill="white" opacity="0.5"/>
-  <circle cx="100" cy="56" r="2.5" fill="white" opacity="0.5"/>
-  <line x1="28" y1="56" x2="46" y2="50" stroke="white" stroke-width="1.5" opacity="0.35"/>
-  <line x1="100" y1="56" x2="82" y2="50" stroke="white" stroke-width="1.5" opacity="0.35"/>
+  <rect width="128" height="128" rx="28" fill="url(#bgSheen)"/>
+  <!-- Subtle circuit traces in background -->
+  <g stroke="#ffffff" stroke-width="0.5" opacity="0.06">
+    <line x1="20" y1="30" x2="40" y2="30"/><line x1="40" y1="30" x2="40" y2="50"/>
+    <line x1="88" y1="78" x2="108" y2="78"/><line x1="88" y1="78" x2="88" y2="98"/>
+    <line x1="25" y1="90" x2="25" y2="105"/><line x1="25" y1="90" x2="40" y2="90"/>
+    <line x1="100" y1="35" x2="100" y2="50"/><line x1="100" y1="35" x2="90" y2="35"/>
+    <rect x="38" y="28" width="4" height="4" fill="#ffffff" rx="0.5"/>
+    <rect x="86" y="76" width="4" height="4" fill="#ffffff" rx="0.5"/>
+    <rect x="23" y="88" width="4" height="4" fill="#ffffff" rx="0.5"/>
+    <rect x="98" y="33" width="4" height="4" fill="#ffffff" rx="0.5"/>
+  </g>
+  <g filter="url(#shadow)">
+    <!-- Infinity symbol made of neural pathways -->
+    <path d="M64,64 C64,52 52,42 42,42 C30,42 24,52 24,60 C24,68 30,78 42,78 C52,78 64,68 64,64 C64,60 76,42 86,42 C98,42 104,52 104,60 C104,68 98,78 86,78 C76,78 64,76 64,64Z"
+          fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.9" filter="url(#pathGlow)"/>
+    <!-- Secondary thinner path for depth -->
+    <path d="M64,64 C64,52 52,42 42,42 C30,42 24,52 24,60 C24,68 30,78 42,78 C52,78 64,68 64,64 C64,60 76,42 86,42 C98,42 104,52 104,60 C104,68 98,78 86,78 C76,78 64,76 64,64Z"
+          fill="none" stroke="#ffffff" stroke-width="1" opacity="0.3"/>
+    <!-- Neural nodes along the infinity path -->
+    <circle cx="34" cy="48" r="3.5" fill="#3730a3" stroke="#ffffff" stroke-width="2" opacity="0.95"/>
+    <circle cx="26" cy="64" r="3" fill="#3730a3" stroke="#ffffff" stroke-width="2" opacity="0.9"/>
+    <circle cx="42" cy="76" r="3" fill="#3730a3" stroke="#ffffff" stroke-width="2" opacity="0.9"/>
+    <circle cx="86" cy="44" r="3" fill="#3730a3" stroke="#ffffff" stroke-width="2" opacity="0.9"/>
+    <circle cx="102" cy="60" r="3" fill="#3730a3" stroke="#ffffff" stroke-width="2" opacity="0.9"/>
+    <circle cx="86" cy="76" r="3.5" fill="#3730a3" stroke="#ffffff" stroke-width="2" opacity="0.95"/>
+    <!-- Dendrite branches from nodes -->
+    <g stroke="#ffffff" stroke-width="1" stroke-linecap="round" opacity="0.4">
+      <line x1="34" y1="48" x2="28" y2="40"/>
+      <line x1="28" y1="40" x2="25" y2="38"/><line x1="28" y1="40" x2="31" y2="36"/>
+      <line x1="42" y1="76" x2="38" y2="84"/>
+      <line x1="38" y1="84" x2="34" y2="86"/>
+      <line x1="86" y1="44" x2="92" y2="36"/>
+      <line x1="92" y1="36" x2="96" y2="34"/><line x1="92" y1="36" x2="90" y2="32"/>
+      <line x1="102" y1="60" x2="108" y2="56"/>
+      <line x1="86" y1="76" x2="90" y2="84"/>
+      <line x1="90" y1="84" x2="94" y2="86"/>
+    </g>
+    <!-- Center brain glow -->
+    <circle cx="64" cy="64" r="12" fill="url(#brainGlow)"/>
+    <circle cx="64" cy="64" r="4.5" fill="#ffffff" opacity="0.85"/>
+    <circle cx="64" cy="64" r="2" fill="#ffffff"/>
+  </g>
 </svg>
