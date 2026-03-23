@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.2)"/>
+      <stop offset="50%" stop-color="rgba(255,255,255,0)"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="128" height="128" rx="28" fill="url(#bg)"/>
+  <!-- Shine -->
+  <rect width="128" height="128" rx="28" fill="url(#shine)"/>
+  <!-- Brain outline (left hemisphere) -->
+  <path d="M64 30 Q44 30 38 44 Q32 54 36 64 Q32 72 38 82 Q44 94 64 96" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- Brain outline (right hemisphere) -->
+  <path d="M64 30 Q84 30 90 44 Q96 54 92 64 Q96 72 90 82 Q84 94 64 96" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- Brain center line -->
+  <line x1="64" y1="30" x2="64" y2="96" stroke="white" stroke-width="2" opacity="0.4"/>
+  <!-- Circuit nodes -->
+  <circle cx="46" cy="50" r="4" fill="white"/>
+  <circle cx="82" cy="50" r="4" fill="white"/>
+  <circle cx="40" cy="70" r="4" fill="white"/>
+  <circle cx="88" cy="70" r="4" fill="white"/>
+  <circle cx="64" cy="62" r="5" fill="white"/>
+  <!-- Circuit connections -->
+  <line x1="46" y1="50" x2="64" y2="62" stroke="white" stroke-width="2" opacity="0.7"/>
+  <line x1="82" y1="50" x2="64" y2="62" stroke="white" stroke-width="2" opacity="0.7"/>
+  <line x1="40" y1="70" x2="64" y2="62" stroke="white" stroke-width="2" opacity="0.7"/>
+  <line x1="88" y1="70" x2="64" y2="62" stroke="white" stroke-width="2" opacity="0.7"/>
+  <!-- Outer connection dots -->
+  <circle cx="28" cy="56" r="2.5" fill="white" opacity="0.5"/>
+  <circle cx="100" cy="56" r="2.5" fill="white" opacity="0.5"/>
+  <line x1="28" y1="56" x2="46" y2="50" stroke="white" stroke-width="1.5" opacity="0.35"/>
+  <line x1="100" y1="56" x2="82" y2="50" stroke="white" stroke-width="1.5" opacity="0.35"/>
+</svg>
